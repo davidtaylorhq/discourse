@@ -1,0 +1,79 @@
+defaults: &defaults
+  working_directory: /var/www/discourse
+  docker:
+    - image: discourse/discourse_test:release
+  
+version: 2
+jobs:
+  build:
+    <<: *defaults
+    environment:
+      - SKIP_CORE: 1
+      - SKIP_PLUGINS: 1
+    steps:
+      - checkout
+      - run: sudo -E -u discourse -H bundle
+      - run: sudo -E -u discourse -H bundle exec rake docker:test
+      - persist_to_workspace:
+          root: .    
+          paths:
+            - .
+  
+  coreruby:
+    <<: *defaults
+    environment:
+      - RUBY_ONLY: 1
+      - SKIP_PLUGINS: 1
+    steps:
+      - attach_workspace:
+          at: .
+      - run: sudo -E -u discourse -H bundle exec rake docker:test
+
+  corejs:
+    <<: *defaults
+    environment:
+      - JS_ONLY: 1
+      - SKIP_PLUGINS: 1
+    steps:
+      - attach_workspace:
+          at: .
+      - run: sudo -E -u discourse -H bundle exec rake docker:test
+
+  pluginruby:
+    <<: *defaults
+    environment:
+      - RUBY_ONLY: 1
+      - SKIP_CORE: 1
+    steps:
+      - attach_workspace:
+          at: .
+      - run: sudo -E -u discourse -H bundle exec rake docker:test
+
+  pluginjs:
+    <<: *defaults
+    environment:
+      - JS_ONLY: 1
+      - SKIP_CORE: 1
+    steps:
+      - attach_workspace:
+          at: .
+      - run: sudo -E -u discourse -H bundle exec rake docker:test
+  
+workflows:
+  version: 2
+
+  btd:
+    jobs:
+      - build
+      - coreruby:
+          requires:
+            - build
+      - corejs:
+          requires:
+            - build
+      - pluginruby:
+          requires:
+            - build
+      - pluginjs:
+          requires:
+            - build
