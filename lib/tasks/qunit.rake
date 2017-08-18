@@ -46,7 +46,7 @@ task "qunit:test", [:timeout, :qunit_path] => :environment do |_, args|
         eval(transformed);
       """
 
-      cmd = "node -e \"#{js_script}\"  #{test_path}/run-qunit-chrome.js http://localhost:#{port}#{qunit_path}"
+      cmd = "node -e \"#{js_script}\" http://localhost:#{port}#{qunit_path}"
     else
       cmd = "phantomjs #{test_path}/run-qunit.js http://localhost:#{port}#{qunit_path}"
     end
