@@ -38,15 +38,7 @@ task "qunit:test", [:timeout, :qunit_path] => :environment do |_, args|
     qunit_path = args[:qunit_path] || "/qunit"
 
     if ENV["USE_CHROME"]
-      js_script = """
-        const babel = require('#{test_path}/babel.js');\
-        const fs = require('fs');\
-        const original = fs.readFileSync('#{test_path}/run-qunit-chrome.js');\
-        transformed = babel.transform(original, {presets: ['es2017']}).code;\
-        eval(transformed);
-      """
-
-      cmd = "node -e \"#{js_script}\" http://localhost:#{port}#{qunit_path}"
+      cmd = "node #{test_path}/run-qunit-chrome.js http://localhost:#{port}#{qunit_path}"
     else
       cmd = "phantomjs #{test_path}/run-qunit.js http://localhost:#{port}#{qunit_path}"
     end
