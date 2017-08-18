@@ -22,7 +22,7 @@ const CDP = require('chrome-remote-interface');
       chromeFlags: [
         '--disable-gpu',
        '--headless',
-       '--disable-sandbox'
+       '--no-sandbox'
       ]
     });
   }
@@ -90,10 +90,10 @@ const CDP = require('chrome-remote-interface');
   }).catch(error(5));
 })();
 
-function error(val){
+function error(code){
   return function(){
-    console.log("A promise failed to resolve "+val);
-  }
+    console.log("A promise failed to resolve code:"+code);
+  };
 }
 
 // The following functions are converted to strings
