@@ -21,7 +21,8 @@ const CDP = require('chrome-remote-interface');
     return chromeLauncher.launch({
       chromeFlags: [
         '--disable-gpu',
-//        '--headless'
+       '--headless',
+       '--disable-sandbox'
       ]
     });
   }
@@ -65,9 +66,9 @@ const CDP = require('chrome-remote-interface');
                 process.exit(124);
               } else {
                 
-                const numFails = Runtime.evaluate({
+                Runtime.evaluate({
                   expression: `(${check_script})()`
-                }).then(() => {
+                }).then((numFails) => {
                   if (numFails.result.type !== 'undefined') {
                     clearInterval(interval);
                     protocol.close();
