@@ -93,6 +93,7 @@ const CDP = require('chrome-remote-interface');
 function error(code){
   return function(){
     console.log("A promise failed to resolve code:"+code);
+    process.exit(1);
   };
 }
 
