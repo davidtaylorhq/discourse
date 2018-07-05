@@ -1904,7 +1904,6 @@ en:
       backup_code: "Log in using a backup code"
 
   user:
-    no_accounts_associated: "No accounts associated"
     deactivated: "Was deactivated due to too many bounced emails to '%{email}'."
     deactivated_by_staff: "Deactivated by staff"
     activated_by_staff: "Activated by staff"

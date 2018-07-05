@@ -816,6 +816,9 @@ en:
           one: "We'll only email you if we haven't seen you in the last minute."
           other: "We'll only email you if we haven't seen you in the last {{count}} minutes."
 
+      associated_accounts:
+        title: "Associated Accounts"
+
       name:
         title: "Name"
         instructions: "your full name (optional)"
@@ -955,6 +958,8 @@ en:
         ok: "Your password looks good."
         instructions: "at least %{count} characters"
 
+      
+
       summary:
         title: "Summary"
         stats: "Stats"
@@ -1001,7 +1006,6 @@ en:
         no_likes: "No likes yet."
 
 
-      associated_accounts: "Logins"
       ip_address:
         title: "Last IP Address"
       registration_ip_address:

@@ -54,6 +54,10 @@ export default Ember.Controller.extend(
       );
     },
 
+    canUpdateAssociatedAccounts() {
+      return true; //TODO: Add conditions
+    },
+
     actions: {
       save() {
         this.set("saved", false);

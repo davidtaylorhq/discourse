@@ -65,7 +65,7 @@ class User < ActiveRecord::Base
   has_one :twitter_user_info, dependent: :destroy
   has_one :github_user_info, dependent: :destroy
   has_one :google_user_info, dependent: :destroy
-  has_one :oauth2_user_info, dependent: :destroy
+  has_many :oauth2_user_infos, dependent: :destroy
   has_one :instagram_user_info, dependent: :destroy
   has_many :user_second_factors, dependent: :destroy
   has_one :user_stat, dependent: :destroy
@@ -954,18 +954,21 @@ class User < ActiveRecord::Base
   def associated_accounts
     result = []
 
-    result << "Twitter(#{twitter_user_info.screen_name})"               if twitter_user_info
-    result << "Facebook(#{facebook_user_info.username})"                if facebook_user_info
-    result << "Google(#{google_user_info.email})"                       if google_user_info
-    result << "GitHub(#{github_user_info.screen_name})"                 if github_user_info
-    result << "Instagram(#{instagram_user_info.screen_name})"           if instagram_user_info
-    result << "#{oauth2_user_info.provider}(#{oauth2_user_info.email})" if oauth2_user_info
+    result << { name: "Twitter", info: twitter_user_info.email || twitter_user_info.screen_name }   if twitter_user_info
+    result << { name: "Facebook", info: facebook_user_info.email || facebook_user_info.username }   if facebook_user_info
+    result << { name: "Google", info: google_user_info.email }             if google_user_info
+    result << { name: "GitHub", info: github_user_info.screen_name }       if github_user_info
+    result << { name: "Instagram", info: instagram_user_info.screen_name } if instagram_user_info
 
-    user_open_ids.each do |oid|
-      result << "OpenID #{oid.url[0..20]}...(#{oid.email})"
+    oauth2_user_infos.each do |oauth2_user_info|
+      result << { name: oauth2_user_info.provider, info: oauth2_user_info.email || oauth2_user_info.name }
     end
 
-    result.empty? ? I18n.t("user.no_accounts_associated") : result.join(", ")
+    user_open_ids.each do |oid|
+      result << { name: "OpenID #{oid.url[0..20]}...", email: oid.email }
+    end
+
+    result
   end
 
   def user_fields

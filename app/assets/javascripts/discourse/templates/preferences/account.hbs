@@ -99,6 +99,24 @@
 </div>
 {{/if}}
 
+{{#if canUpdateAssociatedAccounts}}
+  <div class="control-group pref-associated-accounts">
+    <label class="control-label">{{i18n 'user.associated_accounts.title'}}</label>
+    {{#if model.associated_accounts}}
+      {{#each model.associated_accounts as |account|}}
+        {{account.name}} ({{account.info}}), 
+      {{else}}
+        No user accounts associated
+      {{/each}}
+    {{else}}
+      <div class="controls">
+        {{d-button action="checkEmail" actionParam=model title="admin.users.check_email.title" icon="envelope-o" label="admin.users.check_email.text"}}
+      </div>
+    {{/if}}
+  </div>
+{{/if}}
+
+
 <div class="control-group pref-avatar">
   <label class="control-label">{{i18n 'user.avatar.title'}}</label>
   <div class="controls">
