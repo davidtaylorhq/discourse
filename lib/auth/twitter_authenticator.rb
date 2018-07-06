@@ -4,6 +4,10 @@ class Auth::TwitterAuthenticator < Auth::Authenticator
     "twitter"
   end
 
+  def enabled?
+    SiteSetting.enable_twitter_logins
+  end
+
   def after_authenticate(auth_token)
     result = Auth::Result.new
 

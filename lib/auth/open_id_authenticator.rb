@@ -2,10 +2,15 @@ class Auth::OpenIdAuthenticator < Auth::Authenticator
 
   attr_reader :name, :identifier
 
-  def initialize(name, identifier, opts = {})
+  def initialize(name, identifier, enabled_site_setting, opts = {})
     @name = name
     @identifier = identifier
+    @enabled_site_setting = enabled_site_setting
     @opts = opts
+  end
+
+  def enabled?
+    SiteSetting.send(@enabled_site_setting)
   end
 
   def after_authenticate(auth_token)

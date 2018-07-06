@@ -6,6 +6,15 @@ class Auth::FacebookAuthenticator < Auth::Authenticator
     "facebook"
   end
 
+  def enabled?
+    SiteSetting.enable_facebook_logins
+  end
+
+  def description_for_user(user)
+    info = FacebookUserInfo.find_by(user_id: user.id)
+    info.email || info.username || ""
+  end
+
   def after_authenticate(auth_token)
     result = Auth::Result.new
 

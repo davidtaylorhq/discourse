@@ -4,6 +4,10 @@ class Auth::GoogleOAuth2Authenticator < Auth::Authenticator
     "google_oauth2"
   end
 
+  def enabled?
+    SiteSetting.enable_google_oauth2_logins
+  end
+
   def after_authenticate(auth_hash)
     session_info = parse_hash(auth_hash)
     google_hash = session_info[:google]

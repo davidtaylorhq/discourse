@@ -6,6 +6,10 @@ class Auth::GithubAuthenticator < Auth::Authenticator
     "github"
   end
 
+  def enabled?
+    SiteSetting.enable_github_logins
+  end
+
   class GithubEmailChecker
     include ::HasErrors
 

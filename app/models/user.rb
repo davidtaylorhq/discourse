@@ -954,18 +954,15 @@ class User < ActiveRecord::Base
   def associated_accounts
     result = []
 
-    result << { name: "Twitter", info: twitter_user_info.email || twitter_user_info.screen_name }   if twitter_user_info
-    result << { name: "Facebook", info: facebook_user_info.email || facebook_user_info.username }   if facebook_user_info
-    result << { name: "Google", info: google_user_info.email }             if google_user_info
-    result << { name: "GitHub", info: github_user_info.screen_name }       if github_user_info
-    result << { name: "Instagram", info: instagram_user_info.screen_name } if instagram_user_info
-
-    oauth2_user_infos.each do |oauth2_user_info|
-      result << { name: oauth2_user_info.provider, info: oauth2_user_info.email || oauth2_user_info.name }
-    end
-
-    user_open_ids.each do |oid|
-      result << { name: "OpenID #{oid.url[0..20]}...", email: oid.email }
+    Discourse.authenticators.each do |authenticator|
+      account_description = authenticator.description_for_user(self)
+      if account_description
+        result << {
+          name: authenticator.name,
+          description: account_description,
+          can_revoke: authenticator.can_revoke?
+        }
+      end
     end
 
     result
