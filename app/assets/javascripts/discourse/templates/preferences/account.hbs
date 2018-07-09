@@ -104,7 +104,15 @@
     <label class="control-label">{{i18n 'user.associated_accounts.title'}}</label>
     {{#if model.associated_accounts}}
       {{#each model.associated_accounts as |account|}}
-        {{account.name}} ({{account.info}}), 
+        <li>
+          {{account.name}} ({{account.description}}) 
+          {{#if account.can_revoke}}
+            {{#conditional-loading-spinner condition=revoking size='small'}}
+              {{d-button action="revokeAccount" actionParam=account title="user.associated_accounts.revoke" icon="times-circle" class="btn-small"}}
+            {{/conditional-loading-spinner}}
+          {{/if}}    
+        </li>
+
       {{else}}
         No user accounts associated
       {{/each}}

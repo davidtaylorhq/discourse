@@ -139,6 +139,22 @@ export default Ember.Controller.extend(
 
       showTwoFactorModal() {
         showModal("second-factor-intro");
+      },
+
+      revokeAccount(account) {
+        const model = this.get("model");
+        this.set("revoking", true);
+        model
+          .revokeAssociatedAccount(account.name)
+          .then(result => {
+            if (result.success) {
+              model.get("associated_accounts").removeObject(account);
+            } else {
+              bootbox.alert(result.message);
+            }
+            this.set("revoking", false);
+          })
+          .catch(popupAjaxError);
       }
     }
   }

@@ -12,7 +12,30 @@ class Auth::FacebookAuthenticator < Auth::Authenticator
 
   def description_for_user(user)
     info = FacebookUserInfo.find_by(user_id: user.id)
+    return nil if info.nil?
     info.email || info.username || ""
+  end
+
+  def can_revoke?
+    true
+  end
+
+  def revoke(user, skip_remote = false)
+    info = FacebookUserInfo.find_by(user_id: user.id)
+    uri = URI.parse("https://graph.facebook.com/#{info.facebook_user_id}/permissions?access_token=#{SiteSetting.facebook_app_id}|#{SiteSetting.facebook_app_secret}")
+
+    http = Net::HTTP.new(uri.host, uri.port)
+    http.use_ssl = true
+    request = Net::HTTP::Delete.new(uri.request_uri)
+
+    response = http.request(request)
+
+    if response.kind_of? Net::HTTPSuccess
+      info.destroy!
+      return true
+    else
+      return false
+    end
   end
 
   def after_authenticate(auth_token)
