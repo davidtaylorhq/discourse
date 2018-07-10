@@ -8,6 +8,12 @@ class Auth::InstagramAuthenticator < Auth::Authenticator
     SiteSetting.enable_instagram_logins
   end
 
+  def description_for_user(user)
+    info = InstagramUserInfo.find_by(user_id: user.id)
+    return nil if info.nil?
+    info.screen_name || ""
+  end
+
   # TODO twitter provides all sorts of extra info, like website/bio etc.
   #  it may be worth considering pulling some of it in.
   def after_authenticate(auth_token)

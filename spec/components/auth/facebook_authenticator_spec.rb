@@ -62,4 +62,58 @@ describe Auth::FacebookAuthenticator do
     end
   end
 
+  context 'description_for_user' do
+    let(:user) { Fabricate(:user) }
+    let(:authenticator) { Auth::FacebookAuthenticator.new }
+
+    it 'returns nil if no entry for user' do
+      expect(authenticator.description_for_user(user)).to eq(nil)
+    end
+
+    it 'returns correct information' do
+      FacebookUserInfo.create!(user_id: user.id, facebook_user_id: 12345, email: 'someuser@somedomain.tld')
+      expect(authenticator.description_for_user(user)).to eq('someuser@somedomain.tld')
+    end
+  end
+
+  context 'revoke' do
+    let(:user) { Fabricate(:user) }
+    let(:authenticator) { Auth::FacebookAuthenticator.new }
+
+    it 'raises exception if no entry for user' do
+      expect { authenticator.revoke(user) }.to raise_error(Discourse::NotFound)
+    end
+
+    context "with valid record" do
+      before do
+        SiteSetting.facebook_app_id = '123'
+        SiteSetting.facebook_app_secret = 'abcde'
+        FacebookUserInfo.create!(user_id: user.id, facebook_user_id: 12345, email: 'someuser@somedomain.tld')
+      end
+
+      it 'revokes correctly' do
+        stub = stub_request(:delete, 'https://graph.facebook.com/12345/permissions?access_token=123%7Cabcde').to_return(body: "true")
+
+        expect(authenticator.can_revoke?).to eq(true)
+        expect(authenticator.revoke(user)).to eq(true)
+
+        expect(stub).to have_been_requested.once
+        expect(authenticator.description_for_user(user)).to eq(nil)
+      end
+
+      it 'handles errors correctly' do
+        stub = stub_request(:delete, 'https://graph.facebook.com/12345/permissions?access_token=123%7Cabcde').to_return(status: 404)
+
+        expect(authenticator.revoke(user)).to eq(false)
+        expect(stub).to have_been_requested.once
+        expect(authenticator.description_for_user(user)).to eq('someuser@somedomain.tld')
+
+        expect(authenticator.revoke(user, skip_remote: true)).to eq(true)
+        expect(stub).to have_been_requested.once
+        expect(authenticator.description_for_user(user)).to eq(nil)
+
+      end
+    end
+  end
+
 end

@@ -10,6 +10,12 @@ class Auth::GithubAuthenticator < Auth::Authenticator
     SiteSetting.enable_github_logins
   end
 
+  def description_for_user(user)
+    info = GithubUserInfo.find_by(user_id: user.id)
+    return nil if info.nil?
+    info.screen_name || ""
+  end
+
   class GithubEmailChecker
     include ::HasErrors
 

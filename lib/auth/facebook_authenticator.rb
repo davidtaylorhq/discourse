@@ -22,6 +22,13 @@ class Auth::FacebookAuthenticator < Auth::Authenticator
 
   def revoke(user, skip_remote = false)
     info = FacebookUserInfo.find_by(user_id: user.id)
+    raise Discourse::NotFound if info.nil?
+
+    if skip_remote
+      info.destroy!
+      return true
+    end
+
     uri = URI.parse("https://graph.facebook.com/#{info.facebook_user_id}/permissions?access_token=#{SiteSetting.facebook_app_id}|#{SiteSetting.facebook_app_secret}")
 
     http = Net::HTTP.new(uri.host, uri.port)

@@ -1031,7 +1031,9 @@ class UsersController < ApplicationController
     guardian.ensure_can_edit!(@user)
     provider_name = params.require(:provider_name)
 
-    authenticator = Discourse.enabled_authenticators.find { |authenticator| authenticator.name == provider_name }
+    # Using Discourse.authenticators rather than Discourse.enabled_authenticators so users can
+    # revoke permissions even if the admin has temporarily disabled that type of login
+    authenticator = Discourse.authenticators.find { |authenticator| authenticator.name == provider_name }
     raise Discourse::NotFound if authenticator.nil?
     
     skip_remote = params.permit(:skip_remote)
