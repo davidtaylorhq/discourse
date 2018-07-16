@@ -38,6 +38,36 @@ describe Auth::FacebookAuthenticator do
       expect(result.user.user_profile.location).to eq("America")
     end
 
+    it 'can connect to a different existing user account' do
+      authenticator = Auth::FacebookAuthenticator.new
+      user1 = Fabricate(:user)
+      user2 = Fabricate(:user)
+
+      FacebookUserInfo.create!(user_id: user1.id, facebook_user_id: 100)
+
+      hash = {
+        "extra" => {
+            "raw_info" => {
+            "username" => "bob"
+          }
+        },
+        "info" => {
+          "location" => "America",
+          "description" => "bio",
+          "urls" => {
+            "Website" => "https://awesome.com"
+          }
+        },
+        "uid" => "100"
+      }
+
+      result = authenticator.after_authenticate(hash, existing_account: user2)
+
+      expect(result.user.id).to eq(user2.id)
+      expect(FacebookUserInfo.find_by(user_id: user1.id)).to be(nil)
+      expect(FacebookUserInfo.find_by(user_id: user2.id)).not_to be(nil)
+    end
+
     it 'can create a proper result for non existing users' do
 
       hash = {

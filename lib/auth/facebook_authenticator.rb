@@ -20,7 +20,7 @@ class Auth::FacebookAuthenticator < Auth::Authenticator
     true
   end
 
-  def revoke(user, skip_remote = false)
+  def revoke(user, skip_remote: false)
     info = FacebookUserInfo.find_by(user_id: user.id)
     raise Discourse::NotFound if info.nil?
 
@@ -45,7 +45,11 @@ class Auth::FacebookAuthenticator < Auth::Authenticator
     end
   end
 
-  def after_authenticate(auth_token)
+  def can_connect_existing_user?
+    true
+  end
+
+  def after_authenticate(auth_token, existing_account: nil)
     result = Auth::Result.new
 
     session_info = parse_auth_token(auth_token)
@@ -59,7 +63,15 @@ class Auth::FacebookAuthenticator < Auth::Authenticator
 
     user_info = FacebookUserInfo.find_by(facebook_user_id: facebook_hash[:facebook_user_id])
 
-    result.user = user_info.try(:user)
+    if existing_account && (user_info.nil? || existing_account.id != user_info.user_id)
+      user_info.destroy! if user_info
+      result.user = existing_account
+      user_info = FacebookUserInfo.create({ user_id: result.user.id }.merge(facebook_hash))
+    else
+      result.user = user_info.try(:user)
+    end
+
+    
     if !result.user && !email.blank? && result.user = User.find_by_email(email)
       FacebookUserInfo.create({ user_id: result.user.id }.merge(facebook_hash))
     end

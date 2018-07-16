@@ -5,6 +5,7 @@ import PreferencesTabController from "discourse/mixins/preferences-tab-controlle
 import { setting } from "discourse/lib/computed";
 import { popupAjaxError } from "discourse/lib/ajax-error";
 import showModal from "discourse/lib/show-modal";
+import { findAll } from "discourse/models/login-method";
 
 export default Ember.Controller.extend(
   CanCheckEmails,
@@ -52,6 +53,32 @@ export default Ember.Controller.extend(
       return (
         !this.siteSettings.enable_sso && this.siteSettings.enable_local_logins
       );
+    },
+
+    @computed("model.associated_accounts")
+    associatedAccountsLoaded(associatedAccounts) {
+      return associatedAccounts !== undefined;
+    },
+
+    @computed("model.associated_accounts.[]")
+    authProviders(accounts) {
+      const allMethods = findAll(
+        this.siteSettings,
+        this.capabilities,
+        this.site.isMobileDevice
+      );
+
+      return allMethods.map(method => {
+        return {
+          method: method,
+          account: accounts.find(account => account.name === method.name) // Will be undefined if no account
+        };
+      });
+    },
+
+    @computed("model.id")
+    disableConnectButtons(userId) {
+      return userId !== this.get("currentUser.id");
     },
 
     canUpdateAssociatedAccounts() {
@@ -155,6 +182,10 @@ export default Ember.Controller.extend(
             this.set("revoking", false);
           })
           .catch(popupAjaxError);
+      },
+
+      connectAccount(method) {
+        method.doLogin();
       }
     }
   }

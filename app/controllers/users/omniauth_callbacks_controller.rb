@@ -34,7 +34,11 @@ class Users::OmniauthCallbacksController < ApplicationController
     authenticator = self.class.find_authenticator(params[:provider])
     provider = DiscoursePluginRegistry.auth_providers.find { |p| p.name == params[:provider] }
 
-    @auth_result = authenticator.after_authenticate(auth)
+    if authenticator.can_connect_existing_user? && current_user
+      @auth_result = authenticator.after_authenticate(auth, existing_account: current_user)
+    else
+      @auth_result = authenticator.after_authenticate(auth)
+    end
 
     origin = request.env['omniauth.origin']
 
