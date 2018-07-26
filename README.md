@@ -79,6 +79,7 @@ We take security very seriously at Discourse; all our code is 100% open source a
 
 ## The Discourse Team
 
+
 The original Discourse code contributors can be found in [**AUTHORS.MD**](docs/AUTHORS.md). For a complete list of the many individuals that contributed to the design and implementation of Discourse, please refer to [the official Discourse blog](http://blog.discourse.org/2013/02/the-discourse-team/) and [GitHub's list of contributors](https://github.com/discourse/discourse/contributors).
 
 
