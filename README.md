@@ -1,5 +1,5 @@
 <a href="http://www.discourse.org/">![Logo](images/discourse.png)</a>
-
+Test 2
 Discourse is the 100% open source discussion platform built for the next decade of the Internet. It works as:
 
 - a mailing list
@@ -78,6 +78,7 @@ We look forward to seeing your pull requests!
 We take security very seriously at Discourse; all our code is 100% open source and peer reviewed. Please read [our security guide](https://github.com/discourse/discourse/blob/master/docs/SECURITY.md) for an overview of security measures in Discourse, or if you wish to report a security issue.
 
 ## The Discourse Team
+
 
 The original Discourse code contributors can be found in [**AUTHORS.MD**](docs/AUTHORS.md). For a complete list of the many individuals that contributed to the design and implementation of Discourse, please refer to [the official Discourse blog](http://blog.discourse.org/2013/02/the-discourse-team/) and [GitHub's list of contributors](https://github.com/discourse/discourse/contributors).
 
