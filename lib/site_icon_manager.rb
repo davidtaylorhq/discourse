@@ -38,6 +38,6 @@ module SiteIconManager
 
   def self.opengraph_image
     # No specific size requirement, supply the originals
-    (SiteSetting.opengraph_image || fallback_icon)&.url
+    SiteSetting.opengraph_image || fallback_icon
   end
 end

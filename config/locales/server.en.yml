@@ -4339,8 +4339,8 @@ en:
             label: "Primary Logo"
             description: "The logo image at the top left of your site. Use a wide rectangular image with a height of 120 and an aspect ratio greater than 3:1"
           logo_small:
-            label: "Compact Logo"
-            description: "A compact version of your logo, shown at the top left of your site when scrolling down. Use a square 120 × 120 image."
+            label: "Square Logo"
+            description: "A square version of your logo. Shown at the top left of your site when scrolling down, in the browser, and when sharing on social platforms. Ideally larger than 512x512."
 
       icons:
         title: "Icons"
