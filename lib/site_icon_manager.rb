@@ -1,6 +1,7 @@
 module SiteIconManager
   %i{
     manifest_icon
+    favicon
   }.each do |name|
     define_singleton_method("#{name}_url") do
       icon = self.public_send(name)
@@ -21,4 +22,7 @@ module SiteIconManager
     OptimizedImage.create_for(fallback_icon, 512, 512)
   end
 
+  def self.favicon
+    SiteSetting.favicon || OptimizedImage.create_for(fallback_icon, 512, 512)
+  end
 end
