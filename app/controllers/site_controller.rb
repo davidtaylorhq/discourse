@@ -39,7 +39,7 @@ class SiteController < ApplicationController
     results = {
       logo_url: UrlHelper.absolute(SiteSetting.site_logo_url),
       logo_small_url: UrlHelper.absolute(SiteSetting.site_logo_small_url),
-      apple_touch_icon_url: UrlHelper.absolute(SiteSetting.site_apple_touch_icon_url),
+      apple_touch_icon_url: SiteIconManager.absolute_apple_touch_icon_url,
       favicon_url: SiteIconManager.absolute_favicon_url,
       title: SiteSetting.title,
       description: SiteSetting.site_description,

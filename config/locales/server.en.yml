@@ -4348,7 +4348,7 @@ en:
           favicon:
             label: "Small Icon"
             description: "Icon image used to represent your site in web browsers that looks good at small sizes such as 32 × 32. Recommended image extensions are PNG or JPG."
-          apple_touch_icon:
+          large_icon:
             label: "Large Icon"
             description: "Icon image used to represent your site on modern devices that looks good at larger sizes. Required size is at least 512 × 512."
 
