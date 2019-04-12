@@ -26,8 +26,9 @@ module SiteIconManager
   end
 
   def self.favicon
-    # Use supplied version if present, otherwise generate one
-    SiteSetting.favicon || OptimizedImage.create_for(fallback_icon, 512, 512)
+    # Always resize to 32x32
+    icon = SiteSetting.favicon || fallback_icon
+    OptimizedImage.create_for(icon, 32, 32)
   end
 
   def self.apple_touch_icon
