@@ -1,10 +1,35 @@
 module SiteIconManager
-  %i{
-    manifest_icon
-    favicon
-    apple_touch_icon
-    opengraph_image
-  }.each do |name|
+
+  ICONS = {
+    manifest_icon: { width: 512, height: 512, original: -> { nil }, fallback_to_original: true },
+    favicon: { width: 32, height: 32, original: -> { SiteSetting.favicon }, fallback_to_original: false },
+    apple_touch_icon: { width: 180, height: 180, original: -> { SiteSetting.apple_touch_icon }, fallback_to_original: false },
+    opengraph_image: { width: nil, height: nil, original: -> { SiteSetting.opengraph_image }, fallback_to_original: true }
+  }
+
+  def self.fallback_icon
+    SiteSetting.large_icon || SiteSetting.logo_small
+  end
+
+  def self.ensure_optimized!
+    ICONS.each do |name, info|
+      icon = info[:original].call || fallback_icon
+      if info[:height] && info[:width]
+        OptimizedImage.create_for(icon, info[:width], info[:height])
+      end
+    end
+  end
+
+  ICONS.each do |name, info|
+    define_singleton_method(name) do
+      icon = info[:original].call || fallback_icon
+      if info[:height] && info[:width]
+        result = OptimizedImage.find_by(upload: icon, height: info[:height], width: info[:width])
+      end
+      result = icon if !result && info[:fallback_to_original]
+      result
+    end
+
     define_singleton_method("#{name}_url") do
       icon = self.public_send(name)
       icon&.url
@@ -16,29 +41,4 @@ module SiteIconManager
     end
   end
 
-  def self.fallback_icon
-    SiteSetting.large_icon || SiteSetting.logo_small
-  end
-
-  def self.manifest_icon
-    # Always resize, must be exactly 512x512
-    OptimizedImage.create_for(fallback_icon, 512, 512)
-  end
-
-  def self.favicon
-    # Always resize to 32x32
-    icon = SiteSetting.favicon || fallback_icon
-    OptimizedImage.create_for(icon, 32, 32)
-  end
-
-  def self.apple_touch_icon
-    # Always resize, must be exactly 180x180
-    icon = SiteSetting.apple_touch_icon || fallback_icon
-    OptimizedImage.create_for(icon, 180, 180)
-  end
-
-  def self.opengraph_image
-    # No specific size requirement, supply the originals
-    SiteSetting.opengraph_image || fallback_icon
-  end
 end
