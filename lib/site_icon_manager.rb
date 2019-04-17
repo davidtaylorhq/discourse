@@ -9,6 +9,8 @@ module SiteIconManager
     opengraph_image: { width: nil, height: nil, original: -> { SiteSetting.opengraph_image }, fallback_to_original: true }
   }
 
+  WATCHED_SETTINGS = ICONS.keys + [:large_icon, :logo_small]
+
   def self.fallback_icon
     SiteSetting.large_icon || SiteSetting.logo_small
   end
