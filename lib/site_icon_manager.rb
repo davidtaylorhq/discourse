@@ -1,5 +1,7 @@
 module SiteIconManager
 
+  @cache = DistributedCache.new('icon_manager')
+
   ICONS = {
     manifest_icon: { width: 512, height: 512, original: -> { nil }, fallback_to_original: true },
     favicon: { width: 32, height: 32, original: -> { SiteSetting.favicon }, fallback_to_original: false },
@@ -18,6 +20,7 @@ module SiteIconManager
         OptimizedImage.create_for(icon, info[:width], info[:height])
       end
     end
+    @cache.clear
   end
 
   ICONS.each do |name, info|
@@ -31,14 +34,23 @@ module SiteIconManager
     end
 
     define_singleton_method("#{name}_url") do
-      icon = self.public_send(name)
-      icon&.url
+      get_set_cache("#{name}_url") do
+        icon = self.public_send(name)
+        icon&.url
+      end
     end
 
     define_singleton_method("absolute_#{name}_url") do
       url = self.public_send("#{name}_url")
       UrlHelper.absolute(url)
     end
+  end
+
+  def self.get_set_cache(key, &blk)
+    if val = @cache[key]
+      return val
+    end
+    @cache[key] = blk.call
   end
 
 end
