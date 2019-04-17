@@ -3,7 +3,7 @@ module SiteIconManager
   @cache = DistributedCache.new('icon_manager')
 
   ICONS = {
-    manifest_icon: { width: 512, height: 512, original: -> { nil }, fallback_to_original: true },
+    manifest_icon: { width: 512, height: 512, original: -> { nil }, fallback_to_original: false },
     favicon: { width: 32, height: 32, original: -> { SiteSetting.favicon }, fallback_to_original: false },
     apple_touch_icon: { width: 180, height: 180, original: -> { SiteSetting.apple_touch_icon }, fallback_to_original: false },
     opengraph_image: { width: nil, height: nil, original: -> { SiteSetting.opengraph_image }, fallback_to_original: true }
