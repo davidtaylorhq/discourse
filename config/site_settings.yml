@@ -50,6 +50,17 @@ required:
   site_contact_group_name:
     default: ""
     type: group
+  exclude_rel_nofollow_domains:
+    default: ""
+    type: list
+  company_name:
+    default: ""
+  governing_law:
+    default: ""
+  city_for_disputes:
+    default: ""
+
+branding:
   logo:
     default: -1
     client: true
@@ -110,15 +121,6 @@ required:
     type: upload
   twitter_summary_large_image_url:
     hidden: true
-    default: ""
-  exclude_rel_nofollow_domains:
-    default: ""
-    type: list
-  company_name:
-    default: ""
-  governing_law:
-    default: ""
-  city_for_disputes:
     default: ""
 
 basic:
