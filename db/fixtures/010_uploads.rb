@@ -13,5 +13,9 @@
     upload.url = "/images/#{filename}"
     upload.filesize = File.size(path)
     upload.extension = File.extname(path)[1..10]
+    # Fake an SHA1. We need to have something, so that other parts of the application
+    # keep working. But we can't use the real SHA1, in case the seeded file has already
+    # been uploaded. Use an underscore to make clash impossible.
+    upload.sha1 = "SEED_#{Digest::SHA1.hexdigest("SEEDED_UPLOAD_#{id}")}"[0..Upload::SHA1_LENGTH - 1]
   end
 end
