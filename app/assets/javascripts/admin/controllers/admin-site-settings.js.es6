@@ -77,7 +77,7 @@ export default Ember.Controller.extend({
     } else {
       this.filterContentNow();
     }
-  }, 250).observes("filter", "onlyOverridden"),
+  }, 250).observes("filter", "onlyOverridden", "model"),
 
   actions: {
     clearFilter() {
