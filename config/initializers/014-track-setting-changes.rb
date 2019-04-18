@@ -34,5 +34,10 @@ DiscourseEvent.on(:site_setting_changed) do |name, old_value, new_value|
 
   SvgSprite.expire_cache if name.to_s.include?("_icon")
 
-  SiteIconManager.ensure_optimized! if SiteIconManager::WATCHED_SETTINGS.include?(name)
+  if SiteIconManager::WATCHED_SETTINGS.include?(name)
+    Scheduler::Defer.later("Render icons") do
+      sleep 2
+      SiteIconManager.ensure_optimized!
+    end
+  end
 end

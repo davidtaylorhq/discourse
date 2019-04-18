@@ -48,11 +48,8 @@ module SiteIconManager
     end
   end
 
-  def self.get_set_cache(key, &blk)
-    if val = @cache[key]
-      return val
-    end
-    @cache[key] = blk.call
+  def self.get_set_cache(key)
+    @cache[key] ||= yield
   end
 
 end
