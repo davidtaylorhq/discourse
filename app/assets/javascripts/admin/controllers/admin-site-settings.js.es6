@@ -17,7 +17,9 @@ export default Ember.Controller.extend({
 
     if ((!filter || 0 === filter.length) && !this.get("onlyOverridden")) {
       this.set("visibleSiteSettings", this.get("allSiteSettings"));
-      this.transitionToRoute("adminSiteSettings");
+      if (this.get("categoryNameKey") === "all_results") {
+        this.transitionToRoute("adminSiteSettings");
+      }
       return;
     }
 
