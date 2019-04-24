@@ -2,17 +2,22 @@ module SiteIconManager
 
   @cache = DistributedCache.new('icon_manager')
 
+  SKETCH_LOGO_ID = -2
+
   ICONS = {
-    manifest_icon: { width: 512, height: 512, original: -> { nil }, fallback_to_original: false },
+    digest_logo: { width: nil, height: nil, original: -> { SiteSetting.logo }, fallback_to_original: true },
+    mobile_logo: { width: nil, height: nil, original: -> { SiteSetting.logo }, fallback_to_original: true },
+    large_icon: { width: nil, height: nil, original: -> { nil }, fallback_to_original: true },
+    manifest_icon: { width: 512, height: 512, original: -> { SiteSetting.manifest_icon }, fallback_to_original: false },
     favicon: { width: 32, height: 32, original: -> { SiteSetting.favicon }, fallback_to_original: false },
     apple_touch_icon: { width: 180, height: 180, original: -> { SiteSetting.apple_touch_icon }, fallback_to_original: false },
     opengraph_image: { width: nil, height: nil, original: -> { SiteSetting.opengraph_image }, fallback_to_original: true }
   }
 
-  WATCHED_SETTINGS = ICONS.keys + [:large_icon, :logo_small]
+  WATCHED_SETTINGS = ICONS.keys + [:logo_small]
 
   def self.fallback_icon
-    SiteSetting.large_icon || SiteSetting.logo_small
+    SiteSetting.large_icon || SiteSetting.logo_small || Upload.find(SKETCH_LOGO_ID) # Sketch logo from db/fixtures/010_uploads.rb
   end
 
   def self.ensure_optimized!

@@ -93,18 +93,21 @@ branding:
     default: ""
     client: true
     type: upload
+  manifest_icon:
+    default: ""
+    type: upload
   large_icon_url:
     hidden: true
     default: ""
   favicon:
-    default: -3
+    default: ""
     client: true
     type: upload
   favicon_url:
     hidden: true
     default: "/images/default-favicon.ico"
   apple_touch_icon:
-    default: -4
+    default: ""
     client: true
     type: upload
   apple_touch_icon_url:
