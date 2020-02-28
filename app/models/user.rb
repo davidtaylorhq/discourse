@@ -1218,7 +1218,6 @@ class User < ActiveRecord::Base
       .where('visited_at >= ?', RECENT_TIME_READ_THRESHOLD.ago)
       .group(:user_id)
       .sum(:time_read)
-    users.each { |u| u.preload_recent_time_read(times[u.id]) || 0 }
     users.each { |u| u.preload_recent_time_read(times[u.id] || 0) }
   end
 
