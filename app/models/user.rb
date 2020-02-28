@@ -1219,6 +1219,7 @@ class User < ActiveRecord::Base
       .group(:user_id)
       .sum(:time_read)
     users.each { |u| u.preload_recent_time_read(times[u.id]) || 0 }
+    users.each { |u| u.preload_recent_time_read(times[u.id] || 0) }
   end
 
   def preload_recent_time_read(time)
