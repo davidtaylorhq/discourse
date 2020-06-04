@@ -1,3 +1,5 @@
+import xss from "pretty-text/xss";
+
 // add image to array if src has an upload
 function addImage(uploads, token) {
   if (token.attrs) {
@@ -10,6 +12,36 @@ function addImage(uploads, token) {
   }
 }
 
+function attr(name, value) {
+  if (value) {
+    return `${name}="${xss.escapeAttrValue(value)}"`;
+  }
+
+  return name;
+}
+
+function uploadLocatorString(url) {
+  return `___REPLACE_UPLOAD_SRC_${url}___`;
+}
+
+function findUploadsInHtml(uploads, blockToken) {
+  // Slightly misusing our HTML sanitizer to look for upload://
+  // image src attributes, and replace them with a placeholder
+  blockToken.content = xss(blockToken.content, {
+    onTag(tag, html, options) {
+      // We're not using this for sanitizing, so allow all tags through
+      options.isWhite = true;
+    },
+    onTagAttr(tag, name, value) {
+      if (tag === "img" && name === "src" && value.startsWith("upload://")) {
+        uploads.push([blockToken, value]);
+        return uploadLocatorString(value);
+      }
+      return attr(name, value);
+    }
+  });
+}
+
 function rule(state) {
   let uploads = [];
 
@@ -18,6 +50,10 @@ function rule(state) {
 
     if (blockToken.tag === "img" || blockToken.tag === "a") {
       addImage(uploads, blockToken);
+    }
+
+    if (blockToken.type === "html_block") {
+      findUploadsInHtml(uploads, blockToken);
     }
 
     if (!blockToken.children) continue;
@@ -30,13 +66,46 @@ function rule(state) {
   }
 
   if (uploads.length > 0) {
-    let srcList = uploads.map(([token, srcIndex]) => token.attrs[srcIndex][1]);
+    let srcList = uploads.map(([token, srcIndex]) => {
+      if (token.type === "html_block") {
+        return srcIndex;
+      }
+      return token.attrs[srcIndex][1];
+    });
+
+    // In client-side cooking, this lookup returns nothing
+    // This means we set data-orig-src, and let decorateCooked
+    // lookup the image URLs asynchronously
     let lookup = state.md.options.discourse.lookupUploadUrls;
     let longUrls = (lookup && lookup(srcList)) || {};
 
     uploads.forEach(([token, srcIndex]) => {
-      let origSrc = token.attrs[srcIndex][1];
+      let origSrc =
+        token.type === "html_block" ? srcIndex : token.attrs[srcIndex][1];
       let mapped = longUrls[origSrc];
+
+      if (token.type === "html_block") {
+        const locator = uploadLocatorString(srcIndex);
+        let attrs = [];
+
+        if (mapped) {
+          attrs.push(
+            attr("src", mapped.url),
+            attr("data-base62-sha1", mapped.base62_sha1)
+          );
+        } else {
+          attrs.push(
+            attr(
+              "src",
+              state.md.options.discourse.getURL("/images/transparent.png")
+            ),
+            attr("data-orig-src", origSrc)
+          );
+        }
+
+        token.content = token.content.replace(locator, attrs.join(" "));
+        return;
+      }
 
       switch (token.tag) {
         case "img":
