@@ -347,6 +347,29 @@ module PrettyText
     links
   end
 
+  def self.resolve_upload_protocol_images(html)
+    doc = Nokogiri::HTML5.fragment(html)
+
+    images = doc.css("img[src^='upload://']")
+    src_list = images.map { |i| i['src'] }
+    map = PrettyText::Helpers.lookup_upload_urls(src_list)
+
+    images.each do |img|
+      orig_src = img["src"]
+      mapped = map[orig_src]
+
+      if mapped
+        img["src"] = mapped[:url]
+        img["data-base62-sha1"] = mapped[:base62_sha1]
+      else
+        img["src"] = UrlHelper.absolute("/images/transparent.png")
+        img["data-orig-src"] = orig_src
+      end
+    end
+
+    doc.to_html
+  end
+
   def self.excerpt(html, max_length, options = {})
     # TODO: properly fix this HACK in ExcerptParser without introducing XSS
     doc = Nokogiri::HTML5.fragment(html)

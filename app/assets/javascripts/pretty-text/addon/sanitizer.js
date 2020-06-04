@@ -61,6 +61,10 @@ export function hrefAllowed(href, extraHrefMatchers) {
   if (/^mailto:[\w\.\-@]+/i.test(href)) {
     return href;
   }
+  // upload protocol
+  if (/^upload:\/\//.test(href)) {
+    return href;
+  }
 
   if (extraHrefMatchers && extraHrefMatchers.length > 0) {
     for (let i = 0; i < extraHrefMatchers.length; i++) {

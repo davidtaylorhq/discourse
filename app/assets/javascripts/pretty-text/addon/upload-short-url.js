@@ -143,6 +143,14 @@ function _loadShortUrls($uploads, ajax, siteSettings) {
 }
 
 export function resolveAllShortUrls(ajax, siteSettings, scope = null) {
+  // Convert raw html img tags to the data-orig-src format
+  (document.querySelector(scope) || document)
+    .querySelectorAll('img[src^="upload://"')
+    .forEach(el => {
+      el.dataset.origSrc = el.src;
+      el.src = null;
+    });
+
   const attributes =
     "img[data-orig-src], a[data-orig-href], source[data-orig-src]";
   let $shortUploadUrls = $(scope || document).find(attributes);

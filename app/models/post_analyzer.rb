@@ -31,6 +31,8 @@ class PostAnalyzer
       cooked = PrettyText.cook(raw, opts)
     end
 
+    cooked = PrettyText.resolve_upload_protocol_images(cooked)
+
     result = Oneboxer.apply(cooked) do |url|
       @onebox_urls << url
       Oneboxer.invalidate(url) if opts[:invalidate_oneboxes]
