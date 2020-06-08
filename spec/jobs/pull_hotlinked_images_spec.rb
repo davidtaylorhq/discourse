@@ -60,6 +60,25 @@ describe Jobs::PullHotlinkedImages do
       expect(post.reload.raw).to eq("![](#{Upload.last.short_url})")
     end
 
+    it 'replaces images again after edit' do
+      post = Fabricate(:post, raw: "<img src='#{image_url}'>")
+
+      expect do
+        Jobs::PullHotlinkedImages.new.execute(post_id: post.id)
+      end.to change { Upload.count }.by(1)
+
+      expect(post.reload.raw).to eq("![](#{Upload.last.short_url})")
+
+      # Post raw is updated back to the old value (e.g. by wordpress integration)
+      post.update(raw: "<img src='#{image_url}'>")
+
+      expect do
+        Jobs::PullHotlinkedImages.new.execute(post_id: post.id)
+      end.to change { Upload.count }.by(0) # We already have the upload
+
+      expect(post.reload.raw).to eq("![](#{Upload.last.short_url})")
+    end
+
     it 'replaces encoded image urls' do
       post = Fabricate(:post, raw: "<img src='#{encoded_image_url}'>")
       expect do
