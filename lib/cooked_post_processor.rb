@@ -34,7 +34,7 @@ class CookedPostProcessor
     DistributedMutex.synchronize("post_process_#{@post.id}", validity: 10.minutes) do
       DiscourseEvent.trigger(:before_post_process_cooked, @doc, @post)
       remove_full_quote_on_direct_reply if new_post
-      post_process_oneboxes
+      # post_process_oneboxes
       post_process_images
       post_process_quotes
       optimize_urls
@@ -509,7 +509,7 @@ class CookedPostProcessor
     limit = SiteSetting.max_oneboxes_per_post
     oneboxes = {}
     inlineOneboxes = {}
-
+    put "post process oneboxes"
     Oneboxer.apply(@doc, extra_paths: [".inline-onebox-loading"]) do |url, element|
       is_onebox = element["class"] == Oneboxer::ONEBOX_CSS_CLASS
       map = is_onebox ? oneboxes : inlineOneboxes
