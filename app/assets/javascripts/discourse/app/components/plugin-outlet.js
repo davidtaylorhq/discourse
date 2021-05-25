@@ -1,7 +1,6 @@
-import {
-  buildArgsWithDeprecations,
-  renderedConnectorsFor,
-} from "discourse/lib/plugin-connectors";
+import { connectorsFor } from "discourse/lib/plugin-connectors";
+import { getOwner } from "discourse-common/lib/get-owner";
+import { LegacyDiscourseConnector } from "discourse/lib/discourse-connector";
 /**
    A plugin outlet is an extension point for templates where other templates can
    be inserted by plugins.
@@ -48,12 +47,39 @@ export default Component.extend({
 
     this._super(...arguments);
     const name = this.name;
-    if (name) {
-      const args = buildArgsWithDeprecations(
-        this.args || {},
-        this.deprecatedArgs || {}
-      );
-      this.set("connectors", renderedConnectorsFor(name, args, this));
+
+    if (!this.name) {
+      return;
     }
+
+    const owner = getOwner(this);
+    const connectorInstanceProperties = {
+      args: this.args,
+      siteSettings: this.siteSettings,
+      appEvents: this.appEvents,
+      currentUser: this.currentUser,
+      site: this.site,
+      messageBus: this.messageBus,
+      store: this.store,
+    };
+
+    const connectors = connectorsFor(name).map(
+      ({ connectorClass, componentName }) => {
+        let instanceProperties =
+          connectorClass.prototype instanceof LegacyDiscourseConnector
+            ? { ...connectorInstanceProperties, parentComponent: this }
+            : connectorInstanceProperties;
+
+        return {
+          connectorClass,
+          componentName,
+          connectorInstance: connectorClass.create(
+            owner.ownerInjection(), // Allow dependency injection
+            instanceProperties
+          ),
+        };
+      }
+    );
+    this.set("connectors", connectors);
   },
 });

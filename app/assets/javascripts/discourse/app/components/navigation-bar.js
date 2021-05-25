@@ -12,7 +12,7 @@ export default Component.extend(FilterModeMixin, {
 
   init() {
     this._super(...arguments);
-    this.set("connectors", renderedConnectorsFor("extra-nav-item", null, this));
+    this.set("connectors", []); // TODO: Why isn't navigation-bar using the standard outlet API
   },
 
   @discourseComputed("filterType", "navItems")

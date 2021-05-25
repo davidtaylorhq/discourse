@@ -1,3 +1,5 @@
 {{#each connectors as |c|}}
-  {{plugin-connector connector=c args=args deprecatedArgs=deprecatedArgs class=c.classNames tagName=connectorTagName}}
+  {{#if c.connectorInstance.shouldRender}}
+    {{component c.componentName connector=c.connectorInstance args=args deprecatedArgs=deprecatedArgs tagName=connectorTagName}}
+  {{/if}}
 {{/each}}

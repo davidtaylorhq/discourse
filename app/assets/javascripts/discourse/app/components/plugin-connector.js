@@ -20,9 +20,6 @@ export default Component.extend({
   init() {
     this._super(...arguments);
 
-    const connector = this.connector;
-    this.set("layoutName", connector.templateName);
-
     const args = this.args || {};
     Object.keys(args).forEach((key) => {
       defineProperty(
@@ -47,15 +44,17 @@ export default Component.extend({
       );
     });
 
-    const connectorClass = this.get("connector.connectorClass");
-    this.set("actions", connectorClass.actions);
-
-    for (const [name, action] of Object.entries(this.actions)) {
-      this.set(name, action);
+    const legacyConnectorClass = this.connector.legacyConnectorClass;
+    if (legacyConnectorClass) {
+      // Legacy - will start printing deprectation notices after 2.8 release
+      // See also discourse/lib/plugin-connectors.js
+      this.set("actions", legacyConnectorClass.actions || {});
+      for (const [name, action] of Object.entries(this.actions)) {
+        this.set(name, action);
+      }
+      const merged = buildArgsWithDeprecations(args, deprecatedArgs);
+      legacyConnectorClass.setupComponent?.call(this, merged, this);
     }
-
-    const merged = buildArgsWithDeprecations(args, deprecatedArgs);
-    connectorClass.setupComponent.call(this, merged, this);
   },
 
   didReceiveAttrs() {
@@ -73,14 +72,16 @@ export default Component.extend({
 
   willDestroyElement() {
     this._super(...arguments);
-
-    const connectorClass = this.get("connector.connectorClass");
-    connectorClass.teardownComponent.call(this, this);
+    if (this.connector.legacyConnectorClass?.teardownComponent) {
+      this.connector.legacyConnectorClass.teardownComponent.call(this, this);
+    }
   },
 
   send(name, ...args) {
+    // Legacy - will start printing deprectation notices after 2.8 release
+    // See also discourse/lib/plugin-connectors.js
     const connectorClass = this.get("connector.connectorClass");
-    const action = connectorClass.actions[name];
+    const action = connectorClass.legacyConnectorClass?.actions[name];
     return action ? action.call(this, ...args) : this._super(name, ...args);
   },
 });

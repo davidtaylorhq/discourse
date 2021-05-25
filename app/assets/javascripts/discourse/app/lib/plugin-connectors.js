@@ -1,6 +1,10 @@
 import Site from "discourse/models/site";
 import { buildRawConnectorCache } from "discourse-common/lib/raw-templates";
 import deprecated from "discourse-common/lib/deprecated";
+import DiscourseConnector, {
+  LegacyDiscourseConnector,
+} from "discourse/lib/discourse-connector";
+import ConnectorComponent from "discourse/components/plugin-connector";
 
 let _connectorCache;
 let _rawConnectorCache;
@@ -15,15 +19,8 @@ export function resetExtraClasses() {
 // Note: In plugins, define a class by path and it will be wired up automatically
 // eg: discourse/connectors/<OUTLET NAME>/<CONNECTOR NAME>
 export function extraConnectorClass(name, obj) {
-  _extraConnectorClasses[name] = obj;
+  _extraConnectorClasses[name] = { default: obj };
 }
-
-const DefaultConnectorClass = {
-  actions: {},
-  shouldRender: () => true,
-  setupComponent() {},
-  teardownComponent() {},
-};
 
 function findOutlets(collection, callback) {
   const disabledPlugins = Site.currentProp("disabled_plugins") || [];
@@ -51,20 +48,17 @@ export function clearCache() {
   _rawConnectorCache = null;
 }
 
-function findClass(outletName, uniqueName) {
+function findModule(outletName, uniqueName) {
   if (!_classPaths) {
     _classPaths = {};
+
     findOutlets(require._eak_seen, (outlet, res, un) => {
-      _classPaths[`${outlet}/${un}`] = requirejs(res).default;
+      _classPaths[`${outlet}/${un}`] = requirejs(res);
     });
   }
 
   const id = `${outletName}/${uniqueName}`;
-  let foundClass = _extraConnectorClasses[id] || _classPaths[id];
-
-  return foundClass
-    ? jQuery.extend({}, DefaultConnectorClass, foundClass)
-    : DefaultConnectorClass;
+  return _extraConnectorClasses[id] || _classPaths[id];
 }
 
 function buildConnectorCache() {
@@ -73,12 +67,33 @@ function buildConnectorCache() {
   findOutlets(Ember.TEMPLATES, (outletName, resource, uniqueName) => {
     _connectorCache[outletName] = _connectorCache[outletName] || [];
 
-    _connectorCache[outletName].push({
+    const foundModule = findModule(outletName, uniqueName);
+    let connectorClass = foundModule?.default || DiscourseConnector;
+    let connectorComponentClass = foundModule?.component || ConnectorComponent;
+
+    if (!connectorClass.prototype) {
+      // Legacy - start printing deprecation notice after 2.8 release
+
+      connectorClass = LegacyDiscourseConnector.extend({
+        legacyConnectorClass: connectorClass,
+      });
+    }
+
+    connectorClass = connectorClass.extend({
       outletName,
-      templateName: resource.replace("javascripts/", ""),
-      template: Ember.TEMPLATES[resource],
+    });
+
+    connectorComponentClass = connectorComponentClass.extend({
+      layoutName: resource.replace("javascripts/", ""),
       classNames: `${outletName}-outlet ${uniqueName}`,
-      connectorClass: findClass(outletName, uniqueName),
+    });
+
+    const componentName = `discourse-outlet|${outletName}|${uniqueName}`;
+    Discourse.register(`component:${componentName}`, connectorComponentClass);
+
+    _connectorCache[outletName].push({
+      connectorClass: connectorClass,
+      componentName: componentName,
     });
   });
 }
@@ -88,12 +103,6 @@ export function connectorsFor(outletName) {
     buildConnectorCache();
   }
   return _connectorCache[outletName] || [];
-}
-
-export function renderedConnectorsFor(outletName, args, context) {
-  return connectorsFor(outletName).filter((con) => {
-    return con.connectorClass.shouldRender(args, context);
-  });
 }
 
 export function rawConnectorsFor(outletName) {
