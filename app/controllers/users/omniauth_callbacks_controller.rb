@@ -36,14 +36,7 @@ class Users::OmniauthCallbacksController < ApplicationController
       DiscourseEvent.trigger(:before_auth, authenticator, auth, session, cookies)
       @auth_result = authenticator.after_authenticate(auth)
       @auth_result.user = nil if @auth_result&.user&.staged # Treat staged users the same as unregistered users
-      if @auth_result.secondary_authorization_url
-        return redirect_to @auth_result.secondary_authorization_url
-      end
       DiscourseEvent.trigger(:after_auth, authenticator, @auth_result, session, cookies)
-    end
-
-    if @auth_result.secondary_authorization_url.present?
-      return render 'secondary_authorization'
     end
 
     preferred_origin = request.env['omniauth.origin']

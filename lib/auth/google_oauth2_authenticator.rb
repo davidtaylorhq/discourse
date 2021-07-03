@@ -4,6 +4,58 @@ class Auth::GoogleOAuth2Authenticator < Auth::ManagedAuthenticator
   GROUPS_SCOPE ||= "admin.directory.group.readonly"
   GROUPS_URL ||= "https://admin.googleapis.com/admin/directory/v1/groups"
 
+  class DiscourseGoogleOauth2 < OmniAuth::Strategies::GoogleOauth2
+    def call_app!
+      # Incremental authorization for group info
+      return render_group_confirmation! if on_callback_path? && should_ask_for_groups?
+      super
+    end
+
+    def has_group_scope?
+      request.params['scope']&.split&.include?("#{BASE_SCOPE_URL}#{GROUPS_SCOPE}")
+    end
+
+    def should_ask_for_groups?
+      return false if !SiteSetting.google_oauth2_hd_groups.present?
+      return false if has_group_scope?
+      hd = env['omniauth.auth'][:extra].dig(:raw_info, :hd)
+      SiteSetting.google_oauth2_hd_groups.split('|').include?(hd)
+    end
+
+    def render_group_confirmation!
+      token = CSRFTokenVerifier.new.tap { |v| v.call(env) }.form_authenticity_token
+
+      new_params = request.params.merge(scope: GROUPS_SCOPE)
+      request_url = full_host + script_name + request_path + "?scope=#{GROUPS_SCOPE}"
+      OmniAuth::Form.build(title: "Request groups?", url: request_url) do
+        html "\n<input type='hidden' name='authenticity_token' value='#{token}'/>"
+        button "Continue"
+      end.to_response
+    end
+
+    def raw_groups
+      return nil if !has_group_scope?
+      @group_info ||= begin
+        groups = []
+        page_token = nil
+        loop do
+          response = access_token.get(GROUPS_URL, params: {
+            userKey: uid,
+            pageToken: page_token
+          }).parsed
+          groups.push(*response['groups'])
+          page_token = response['nextPageToken']
+          break if page_token.nil?
+        end
+        groups
+      end
+    end
+
+    extra do
+      { raw_groups: raw_groups }
+    end
+  end
+
   def name
     "google_oauth2"
   end
@@ -25,9 +77,8 @@ class Auth::GoogleOAuth2Authenticator < Auth::ManagedAuthenticator
         strategy.options[:client_id] = SiteSetting.google_oauth2_client_id
         strategy.options[:client_secret] = SiteSetting.google_oauth2_client_secret
 
-        if (google_oauth2_hd = SiteSetting.google_oauth2_hd).present?
-          strategy.options[:hd] = google_oauth2_hd
-        end
+        hd = SiteSetting.google_oauth2_hd
+        strategy.options[:hd] = hd if hd.present?
 
         if (google_oauth2_prompt = SiteSetting.google_oauth2_prompt).present?
           strategy.options[:prompt] = google_oauth2_prompt.gsub("|", " ")
@@ -39,111 +90,30 @@ class Auth::GoogleOAuth2Authenticator < Auth::ManagedAuthenticator
         # https://github.com/zquestz/omniauth-google-oauth2/pull/392
         strategy.options[:skip_jwt] = true
 
-        if SiteSetting.google_oauth2_hd_groups.present?
+        hd_groups = SiteSetting.google_oauth2_hd_groups
+        if hd_groups.present? && hd == hd_groups
+          # Only one hosted domain is allowed. Always request group info
+          strategy.options[:scope] = "#{DEFAULT_SCOPE},#{GROUPS_SCOPE}"
+        elsif hd_groups.present?
+          # Use incremental authorization
           strategy.options[:include_granted_scopes] = true
         end
       }
     }
-    omniauth.provider :google_oauth2, options
+    omniauth.provider DiscourseGoogleOauth2, options
   end
 
   def after_authenticate(auth_token, existing_account: nil)
     @auth_result = super
-    domain = auth_token[:extra][:raw_info][:hd]
-    session = auth_token[:session]
-
-    if should_get_groups_for_domain(domain)
-      @auth_result.extra_data[:provider_domain] = domain
-
-      if !token_has_groups_scope(session) && !secondary_authorization_response(session)
-        @auth_result.secondary_authorization_url = secondary_authorization_url
-        return @auth_result
+    if raw_groups = auth_token[:extra][:raw_groups]
+      hd = auth_token[:extra][:raw_info][:hd]
+      @auth_result.groups = raw_groups.map do |google_group|
+        {
+          name: "#{hd}:#{google_group["name"]}",
+          id: google_group["id"]
+        }
       end
-
-      @auth_result.associated_groups = get_groups(auth_token)
     end
-
     @auth_result
-  end
-
-  def get_groups(auth_token)
-    groups = []
-    page_token = ""
-
-    until page_token.nil? do
-      groups_response = request_groups(auth_token, page_token)
-      break if !groups_response.is_a?(Hash) || @auth_result.failed
-
-      if (groups_json = groups_response[:groups]).present?
-        groups.push(*groups_json.map { |g| g[:name] })
-      end
-
-      page_token = groups_response[:nextPageToken] || nil
-    end
-
-    groups
-  end
-
-  def secondary_authorization_url
-    "#{Discourse.base_url}/auth/#{name}?state=secondary&scope=#{GROUPS_SCOPE}"
-  end
-
-  protected
-
-  def request_groups(auth_token, page_token)
-    connection = Excon.new(GROUPS_URL)
-
-    query = {
-      userKey: auth_token[:uid]
-    }
-    query[:pageToken] = page_token if page_token.present?
-
-    response = connection.get(
-      headers: {
-        'Authorization' => "Bearer #{auth_token[:credentials][:token]}",
-        'Accept' => 'application/json'
-      },
-      query: query
-    )
-
-    response_body = begin
-      JSON.parse(response.body, symbolize_names: true)
-    rescue JSON::ParserError
-      @auth_result.failed = true
-      @auth_result.failed_reason = I18n.t('omniauth_error.generic')
-      return false
-    end
-
-    if response.status != 200
-      @auth_result.failed = true
-      @auth_result.failed_reason = response_body.dig(:error, :message)
-      return false
-    end
-
-    response_body
-  end
-
-  def should_get_groups_for_domain(domain)
-    return false if !domain
-    SiteSetting.google_oauth2_hd_groups.split('|').include?(domain)
-  end
-
-  def response_parameters(session)
-    req = session.instance_variable_get(:@req)
-    req.env['QUERY_STRING'] && Rack::Utils.parse_query(req.env['QUERY_STRING'], '&')
-  end
-
-  def secondary_authorization_response(session)
-    params = response_parameters(session)
-    params && params['state'] === 'secondary'
-  end
-
-  def token_has_groups_scope(session)
-    # scope returned in response will include all scopes of token in incremental authorization.
-    # see https://developers.google.com/identity/protocols/oauth2/web-server#incrementalAuth
-    # Alternate token scope check (dev only): https://www.googleapis.com/oauth2/v3/tokeninfo
-
-    params = response_parameters(session)
-    params && params["scope"].present? && params["scope"].include?(GROUPS_SCOPE)
   end
 end

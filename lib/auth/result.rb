@@ -22,8 +22,7 @@ class Auth::Result
     :failed,
     :failed_reason,
     :failed_code,
-    :secondary_authorization_url,
-    :associated_groups
+    :groups
   ]
 
   attr_accessor *ATTRIBUTES
@@ -98,15 +97,15 @@ class Auth::Result
   end
 
   def apply_associated_attributes!
-    if extra_data && extra_data[:provider].present? && associated_groups.present?
+    if extra_data && extra_data[:provider].present? && !groups.nil?
       associated_group_ids = []
 
-      associated_groups.uniq.each do |associated_group|
+      groups.each do |group|
         begin
           associated_group = AssociatedGroup.find_or_create_by(
-            name: associated_group,
+            name: group[:name],
             provider_name: extra_data[:provider],
-            provider_domain: extra_data[:provider_domain]
+            # provider_id: group[:id] # (needs new column)
           )
         rescue ActiveRecord::RecordNotUnique
           retry
