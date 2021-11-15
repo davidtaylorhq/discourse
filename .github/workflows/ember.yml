@@ -5,7 +5,7 @@ on:
   push:
     branches:
       - main
-      - davidtest
+      - allow-failure-chrome-embercli
 
 jobs:
   build:
