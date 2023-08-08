@@ -4,10 +4,6 @@ task "assets:precompile:before" do
   require "uglifier"
   require "open3"
 
-  unless %w[profile production].include? Rails.env
-    raise "rake assets:precompile should only be run in RAILS_ENV=production, you are risking unminified assets"
-  end
-
   if ENV["EMBER_CLI_COMPILE_DONE"] != "1"
     compile_command = "yarn --cwd app/assets/javascripts/discourse run ember build -prod"
 
@@ -257,6 +253,11 @@ def copy_maxmind(from_path, to_path)
 end
 
 task "assets:precompile" => "assets:precompile:before" do
+  if !Rails.env.production?
+    puts "Skipping optimisations, not production"
+    next
+  end
+
   refresh_days = GlobalSetting.refresh_maxmind_db_during_precompile_days
 
   if refresh_days.to_i > 0

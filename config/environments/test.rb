@@ -41,8 +41,8 @@ Discourse::Application.configure do
   # lower iteration count for test
   config.pbkdf2_iterations = 10
 
-  config.assets.compile = true
-  config.assets.digest = false
+  config.assets.compile = false
+  config.assets.digest = true
 
   config.eager_load = ENV["DISCOURSE_ZEITWERK_EAGER_LOAD"] == "1"
 

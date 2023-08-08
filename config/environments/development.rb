@@ -27,7 +27,8 @@ Discourse::Application.configure do
   config.assets.compress = false
 
   # Don't Digest assets, makes debugging uglier
-  config.assets.digest = false
+  config.assets.digest = true
+  config.assets.compile = false
 
   config.assets.debug = false
 

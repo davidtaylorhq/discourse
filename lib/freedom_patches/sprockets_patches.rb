@@ -28,14 +28,14 @@ module FreedomPatches
   end
 end
 
-if Rails.env.development? || Rails.env.test?
-  ActiveSupport.on_load(:action_view) do
-    def compute_asset_path(source, _options = {})
-      "/assets/#{source}"
-    end
-    alias_method :public_compute_asset_path, :compute_asset_path
-  end
-end
+# if Rails.env.development? || Rails.env.test?
+#   ActiveSupport.on_load(:action_view) do
+#     def compute_asset_path(source, _options = {})
+#       "/assets/#{source}"
+#     end
+#     alias_method :public_compute_asset_path, :compute_asset_path
+#   end
+# end
 
 # By default, the Sprockets DirectiveProcessor introduces a newline between possible 'header' comments
 # and the rest of the JS file. (https://github.com/rails/sprockets/blob/f4d3dae71e/lib/sprockets/directive_processor.rb#L121)
