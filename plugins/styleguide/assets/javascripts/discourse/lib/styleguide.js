@@ -36,6 +36,7 @@ import navigation from "../components/sections/organisms/navigation";
 import siteHeader from "../components/sections/organisms/site-header";
 import suggestedTopics from "../components/sections/organisms/suggested-topics";
 import userAbout from "../components/sections/organisms/user-about";
+import charlieTest from "../components/sections/organisms/charlie-test";
 
 let _allCategories = null;
 let _sectionsById = {};
@@ -104,6 +105,7 @@ const SECTIONS = [
   { component: siteHeader, category: "organisms", id: "site-header" },
   { component: suggestedTopics, category: "organisms", id: "suggested-topics" },
   { component: userAbout, category: "organisms", id: "user-about" },
+  { component: charlieTest, category: "organisms", id: "charlie-test" },
 ];
 
 export function addSection(section) {
