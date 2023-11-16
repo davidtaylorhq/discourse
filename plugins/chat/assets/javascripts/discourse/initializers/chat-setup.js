@@ -174,7 +174,7 @@ export default {
 
       api.addCardClickListenerSelector(".chat-drawer-outlet");
 
-      api.addToHeaderIcons("chat-header-icon");
+      // api.addToHeaderIcons("chat-header-icon");
 
       api.addStyleguideSection?.({
         component: chatStyleguide,

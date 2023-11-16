@@ -232,7 +232,13 @@ createWidget("header-icons", {
       return [];
     }
 
-    const icons = [];
+    const icons = [
+      new RenderGlimmer(
+        this,
+        "div.extra-header-icons",
+        hbs`<PluginOutlet @name="extra-header-icons" />`
+      ),
+    ];
 
     if (_extraHeaderIcons) {
       _extraHeaderIcons.forEach((icon) => {
