@@ -57,7 +57,10 @@ class RemoteTheme < ActiveRecord::Base
     end
 
     begin
+      p "---"
+      p importer
       p importer.all_files
+      p "---"
       json = JSON.parse(importer["about.json"])
       json.fetch("name")
       json
