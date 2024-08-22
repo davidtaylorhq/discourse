@@ -60,8 +60,8 @@ class RemoteTheme < ActiveRecord::Base
       json = JSON.parse(importer["about.json"])
       json.fetch("name")
       json
-    rescue TypeError, JSON::ParserError, KeyError
-      raise ImportError.new I18n.t("themes.import_error.about_json")
+      # rescue TypeError, JSON::ParserError, KeyError
+      #   raise ImportError.new I18n.t("themes.import_error.about_json")
     end
   end
 
