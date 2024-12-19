@@ -19,6 +19,8 @@ const RawHandlebarsCompiler = require("discourse-hbr/raw-handlebars-compiler");
 const crypto = require("crypto");
 const commonBabelConfig = require("./lib/common-babel-config");
 const TerserPlugin = require("terser-webpack-plugin");
+const filterWebpackStats =
+  require("@bundle-stats/plugin-webpack-filter").default;
 
 process.env.BROCCOLI_ENABLED_MEMOIZE = true;
 
@@ -223,6 +225,18 @@ module.exports = function (defaults) {
               }
 
               return JSON.stringify(output, null, 2);
+            },
+          }),
+          new StatsWriterPlugin({
+            filename: "webpack-stats.json",
+            stats: {
+              assets: true,
+              chunks: true,
+              modules: true,
+            },
+            transform: (webpackStats) => {
+              const filteredSource = filterWebpackStats(webpackStats);
+              return JSON.stringify(filteredSource);
             },
           }),
           new RetryChunkLoadPlugin({

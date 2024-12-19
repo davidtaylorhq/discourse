@@ -15,6 +15,7 @@
     "test": "ember test"
   },
   "dependencies": {
+    "@bundle-stats/plugin-webpack-filter": "^4.17.0",
     "@faker-js/faker": "^9.3.0",
     "@glimmer/syntax": "^0.93.1",
     "@highlightjs/cdn-assets": "^11.11.0",

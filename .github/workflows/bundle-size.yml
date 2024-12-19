@@ -1,0 +1,48 @@
+name: Bundle Size
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+concurrency:
+  group: bundle-size-${{ format('{0}-{1}', github.head_ref || github.run_number, github.job) }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  bundle_size:
+    if: github.event_name == 'pull_request' || github.repository != 'discourse/discourse-private-mirror'
+    name: run
+    runs-on: ${{ (github.repository != 'discourse/discourse' && 'ubuntu-latest') || 'debian-12' }}
+    container: discourse/discourse_test:slim
+    timeout-minutes: 30
+
+    steps:
+      - name: Set working directory owner
+        run: chown root:root .
+
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Setup Git
+        run: |
+          git config --global user.email "ci@ci.invalid"
+          git config --global user.name "Discourse CI"
+
+      - name: pnpm install
+        run: pnpm install --frozen-lockfile
+
+      - name: run production build
+        run: pnpm ember build -prod
+
+      - name: Send bundle stats to RelativeCI
+        uses: relative-ci/agent-action@v2
+        with:
+          webpackStatsFile: ./app/assets/javascripts/discourse/dist/webpack-stats.json
+          key: ${{ secrets.RELATIVE_CI_KEY }}
+          token: ${{ secrets.GITHUB_TOKEN }}

@@ -266,6 +266,9 @@ importers:
 
   app/assets/javascripts/discourse:
     dependencies:
+      '@bundle-stats/plugin-webpack-filter':
+        specifier: ^4.17.0
+        version: 4.17.0(core-js@3.33.0)
       '@faker-js/faker':
         specifier: ^9.3.0
         version: 9.3.0
@@ -503,7 +506,7 @@ importers:
         version: 3.0.1(ember-source@5.12.0(patch_hash=xx7mvsb7nmshqkkqhmf45r3hse)(@glimmer/component@1.1.2(@babel/core@7.26.0))(@glint/template@1.5.0)(rsvp@4.8.5)(webpack@5.97.1(@swc/core@1.10.1)(esbuild@0.24.0)))
       ember-modifier:
         specifier: ^4.2.0
-        version: 4.2.0(@babel/core@7.26.0)(ember-source@5.12.0(patch_hash=xx7mvsb7nmshqkkqhmf45r3hse)(@glimmer/component@1.1.2(@babel/core@7.26.0))(@glint/template@1.5.0)(rsvp@4.8.5)(webpack@5.97.1(@swc/core@1.10.1)(esbuild@0.24.0)))
+        version: 4.2.0(@babel/core@7.26.0)(ember-source@5.12.0(patch_hash=xx7mvsb7nmshqkkqhmf45r3hse)(@glimmer/component@1.1.2(@babel/core@7.26.0))(@glint/template@1.5.0)(rsvp@4.8.5))
       ember-on-resize-modifier:
         specifier: ^2.0.2
         version: 2.0.2(@babel/core@7.26.0)(@glint/template@1.5.0)(ember-source@5.12.0(patch_hash=xx7mvsb7nmshqkkqhmf45r3hse)(@glimmer/component@1.1.2(@babel/core@7.26.0))(@glint/template@1.5.0)(rsvp@4.8.5)(webpack@5.97.1(@swc/core@1.10.1)(esbuild@0.24.0)))(webpack@5.97.1(@swc/core@1.10.1)(esbuild@0.24.0))
@@ -1792,6 +1795,12 @@ packages:
 
   '@blueoak/list@15.0.0':
     resolution: {integrity: sha512-xW5Xb9Fr3WtYAOwavxxWL0CaJK/ReT+HKb5/R6dR1p9RVJ55MTdaxPdeTKY2ukhFchv2YHPMM8YuZyfyLqxedg==}
+
+  '@bundle-stats/plugin-webpack-filter@4.17.0':
+    resolution: {integrity: sha512-sGC1c7oiRNKY19OLNB2Yha88Yt+UC7OJWlk8O6HBvN/OO8ACvZ6DuxRMNBXMyP0cDDAJlcY9v9rzy0bbnegzAw==}
+    engines: {node: '>= 14.0'}
+    peerDependencies:
+      core-js: ^3.0.0
 
   '@cnakazawa/watch@1.0.4':
     resolution: {integrity: sha512-v9kIhKwjeZThiWrLmj0y17CWoyddASLj9O2yvbZkbvw/N3rWOYy9zkV66ursAoVr0mV15bL8g0c4QZUE6cdDoQ==}
@@ -9277,6 +9286,10 @@ snapshots:
 
   '@blueoak/list@15.0.0': {}
 
+  '@bundle-stats/plugin-webpack-filter@4.17.0(core-js@3.33.0)':
+    dependencies:
+      core-js: 3.33.0
+
   '@cnakazawa/watch@1.0.4':
     dependencies:
       exec-sh: 0.3.6
@@ -9983,7 +9996,7 @@ snapshots:
       '@glint/template': 1.5.0
     optionalDependencies:
       ember-cli-htmlbars: 6.3.0
-      ember-modifier: 4.2.0(@babel/core@7.26.0)(ember-source@5.12.0(patch_hash=xx7mvsb7nmshqkkqhmf45r3hse)(@glimmer/component@1.1.2(@babel/core@7.26.0))(@glint/template@1.5.0)(rsvp@4.8.5)(webpack@5.97.1(@swc/core@1.10.1)(esbuild@0.24.0)))
+      ember-modifier: 4.2.0(@babel/core@7.26.0)(ember-source@5.12.0(patch_hash=xx7mvsb7nmshqkkqhmf45r3hse)(@glimmer/component@1.1.2(@babel/core@7.26.0))(@glint/template@1.5.0)(rsvp@4.8.5))
 
   '@glint/environment-ember-template-imports@1.5.0(@glint/environment-ember-loose@1.5.0(@glimmer/component@1.1.2(@babel/core@7.26.0))(@glint/template@1.5.0)(ember-cli-htmlbars@6.3.0)(ember-modifier@4.2.0(@babel/core@7.26.0)(ember-source@5.12.0(patch_hash=xx7mvsb7nmshqkkqhmf45r3hse)(@glimmer/component@1.1.2(@babel/core@7.26.0))(@glint/template@1.5.0)(rsvp@4.8.5))))(@glint/template@1.5.0)':
     dependencies:
@@ -12673,7 +12686,7 @@ snapshots:
       - '@babel/core'
       - supports-color
 
-  ember-modifier@4.2.0(@babel/core@7.26.0)(ember-source@5.12.0(patch_hash=xx7mvsb7nmshqkkqhmf45r3hse)(@glimmer/component@1.1.2(@babel/core@7.26.0))(@glint/template@1.5.0)(rsvp@4.8.5)(webpack@5.97.1(@swc/core@1.10.1)(esbuild@0.24.0))):
+  ember-modifier@4.2.0(@babel/core@7.26.0)(ember-source@5.12.0(patch_hash=xx7mvsb7nmshqkkqhmf45r3hse)(@glimmer/component@1.1.2(@babel/core@7.26.0))(@glint/template@1.5.0)(rsvp@4.8.5)):
     dependencies:
       '@embroider/addon-shim': 1.9.0
       decorator-transforms: 2.3.0(@babel/core@7.26.0)
@@ -12690,7 +12703,7 @@ snapshots:
       ember-auto-import: 2.10.0(@glint/template@1.5.0)(webpack@5.97.1(@swc/core@1.10.1)(esbuild@0.24.0))
       ember-cli-babel: 7.26.11
       ember-cli-htmlbars: 5.7.2
-      ember-modifier: 4.2.0(@babel/core@7.26.0)(ember-source@5.12.0(patch_hash=xx7mvsb7nmshqkkqhmf45r3hse)(@glimmer/component@1.1.2(@babel/core@7.26.0))(@glint/template@1.5.0)(rsvp@4.8.5)(webpack@5.97.1(@swc/core@1.10.1)(esbuild@0.24.0)))
+      ember-modifier: 4.2.0(@babel/core@7.26.0)(ember-source@5.12.0(patch_hash=xx7mvsb7nmshqkkqhmf45r3hse)(@glimmer/component@1.1.2(@babel/core@7.26.0))(@glint/template@1.5.0)(rsvp@4.8.5))
       ember-resize-observer-service: 1.1.0
     transitivePeerDependencies:
       - '@babel/core'
