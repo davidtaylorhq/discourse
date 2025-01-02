@@ -8,19 +8,27 @@
   "keywords": [],
   "dependencies": {
     "@babel/standalone": "^7.26.4",
+    "@rollup/browser": "^4.29.1",
+    "@rollup/wasm-node": "^4.29.1",
+    "@swc/wasm-web": "^1.10.4",
     "@zxing/text-encoding": "^0.9.0",
     "babel-plugin-ember-template-compilation": "^2.3.0",
     "content-tag": "^3.1.0",
+    "core-js": "^3.39.0",
     "decorator-transforms": "^2.3.0",
     "discourse-common": "workspace:1.0.0",
     "discourse-widget-hbs": "workspace:1.0.0",
     "ember-cli-htmlbars": "^6.3.0",
     "ember-source": "~5.12.0",
     "ember-this-fallback": "^0.4.0",
+    "fastestsmallesttextencoderdecoder": "^1.0.22",
     "handlebars": "^4.7.8",
+    "jsdom": "^25.0.1",
     "path-browserify": "^1.0.1",
     "polyfill-crypto.getrandomvalues": "^1.0.0",
-    "terser": "^5.37.0"
+    "terser": "^5.37.0",
+    "url-polyfill": "^1.1.12",
+    "url-shim": "^1.0.1"
   },
   "engines": {
     "node": ">= 18",

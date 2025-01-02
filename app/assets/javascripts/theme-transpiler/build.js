@@ -47,12 +47,13 @@ esbuild
   .build({
     logLevel: "warning",
     bundle: true,
-    minify: true,
+    minify: false,
     alias: {
       util: "./node_modules/@zxing/text-encoding",
     },
     define: {
       process: `{ "env": { "EMBER_ENV": "production" } }`,
+      "import.meta.url": "'http://example.com'",
     },
     external: ["fs", "path"],
     entryPoints: ["./transpiler.js"],
