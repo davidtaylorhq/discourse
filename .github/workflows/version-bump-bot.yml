@@ -103,6 +103,6 @@ jobs:
       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     steps:
       - name: "Set to draft"
-        run: gh pr edit ${{ github.event.number }} --draft
+        run: gh pr ready ${{ github.event.number }} --undo
       - name: "Post comment"
         run: gh pr comment ${{ github.event.number }} -b "Do not use the GitHub UI to merge this PR. When ready to perform the version bump, approve the PR, and make a comment with the text '@discoursebot merge version bump'"
