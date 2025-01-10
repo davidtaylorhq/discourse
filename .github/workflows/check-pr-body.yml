@@ -1,7 +1,7 @@
 name: check-pr-body
 
 on:
-  pull_request:
+  pull_request_target:
     types: [opened, reopened, edited]
 
 jobs:
