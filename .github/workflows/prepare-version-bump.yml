@@ -11,7 +11,7 @@ on:
         default: false
 
 concurrency:
-  group: plan-bump
+  group: version-bump-${{ inputs.merge }}
   cancel-in-progress: true
 
 jobs:
