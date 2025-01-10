@@ -37,3 +37,12 @@ jobs:
         run: bundle install
       - name: "Plan Version Bump"
         run: DRY_RUN=1 bin/rake version_bump:beta
+      - name: Checkout new branch
+        run: git checkout -b version_bump/beta
+      - uses: peter-evans/create-pull-request@v7
+        with:
+          branch: version_bump/beta
+          title: Prepare beta version bump
+          draft: true
+          body: |
+            Testing 123

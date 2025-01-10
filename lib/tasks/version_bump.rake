@@ -107,7 +107,9 @@ def make_pr(base:, branch:, title:)
       > It should only be merged (via fast-forward) using the associated `bin/rake version_bump:*` task.
     MD
 
-  if !test_mode?
+  if ENV["GITHUB_ACTIONS"]
+    # todo: write ome useful output
+  elsif !test_mode?
     open_command =
       case RbConfig::CONFIG["host_os"]
       when /darwin|mac os/
