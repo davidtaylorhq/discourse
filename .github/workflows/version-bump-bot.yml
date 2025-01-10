@@ -4,6 +4,9 @@ on:
   push:
     branches:
       - main
+  pull_request:
+    types: [ready_for_review]
+    branches: [version_bump/beta]
 
 concurrency:
   group: plan-bump
@@ -11,6 +14,7 @@ concurrency:
 
 jobs:
   plan-version-bump:
+    if: github.event_name == 'push'
     name: Plan Version Bump
     runs-on: ubuntu-latest
     container: discourse/discourse_test:release
@@ -52,7 +56,9 @@ jobs:
             && sudo apt update \
             && sudo apt install gh -y
       - name: Core release notes
-        run: bin/rake "release_note:generate" | tee tmp/notes/core.txt
+        run: |
+          mkdir -p tmp/notes
+          bin/rake "release_note:generate" | tee tmp/notes/core.txt
       - name: "Plan Version Bump"
         run: DRY_RUN=1 bin/rake version_bump:beta
       - name: "Build PR Body"
@@ -86,3 +92,16 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TITLE: "Prepare beta version bump"
+  prevent-ready-for-review:
+    if: github.event_name == 'pull_request' && github.event.action == 'ready_for_review'
+    name: Prevent Ready for Review
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - name: "Set to draft"
+        run: gh pr edit ${{ github.event.number }} --draft
+      - name: "Post comment"
+        run: gh pr comment ${{ github.event.number }} -b "Do not use the GitHub UI to merge this PR. When ready to perform the version bump, approve the PR, and make a comment with the text '@discoursebot merge version bump'"
