@@ -50,4 +50,8 @@ jobs:
       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     steps:
       - name: "Post comment"
-        run: gh pr comment ${{ github.event.issue.number }} --repo ${{ github.repository }} -b "Starting merge..."
+        run: |
+          gh pr comment ${{ github.event.issue.number }} --repo ${{ github.repository }} -b "Starting merge... Check progress [here](https://github.com/${{github.repository}}/actions/workflows/prepare-version-bump.yml?query=event%3Aworkflow_dispatch)"
+      - name: "Trigger version bump"
+        run: |
+          gh workflow run --repo ${{ github.repository }} prepare-version-bump.yml --field merge=true
