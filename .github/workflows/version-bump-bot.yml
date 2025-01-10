@@ -6,7 +6,6 @@ on:
       - main
   pull_request:
     types: [ready_for_review]
-    branches: [version_bump/beta]
 
 concurrency:
   group: plan-bump
