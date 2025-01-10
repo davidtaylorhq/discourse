@@ -27,14 +27,20 @@ jobs:
       - name: "Post comment"
         run: gh pr comment ${{ github.event.number }} --repo ${{ github.repository }} -b "Do not use the GitHub UI to merge this PR. When ready to perform the version bump, approve the PR, and make a comment with the text '@discoursebot merge version bump'"
 
+  echo:
+    name: echo
+    runs-on: ubuntu-latest
+    steps:
+      - name: echo
+        run: echo "${{github.event}}"
+
   trigger-version-bump:
     if: | 
       github.event_name == 'issue_comment' &&
-        github.event.action == 'created' &&
         github.event.issue.pull_request &&
         github.event.comment.body == '@discoursebot merge version bump' &&
         github.event.issue.author_association == 'MEMBER'
-    name: force draft
+    name: trigger version bump
     runs-on: ubuntu-latest
     permissions:
       pull-requests: write
