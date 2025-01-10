@@ -7,10 +7,8 @@ on:
   workflow_call:
     inputs:
       merge:
-        description: "Merge the version bump PR?"
-        required: true
-        default: false
         type: boolean
+        default: false
 
 concurrency:
   group: plan-bump
@@ -18,7 +16,7 @@ concurrency:
 
 jobs:
   plan-version-bump:
-    name: ${{github.event.inputs.merge && 'Merge' || 'Plan'}}
+    name: ${{inputs.merge && 'Merge' || 'Plan'}}
     runs-on: ubuntu-latest
     container: discourse/discourse_test:release
     timeout-minutes: 5
@@ -59,18 +57,18 @@ jobs:
             && sudo apt update \
             && sudo apt install gh -y
       - name: Core release notes
-        if: ${{ !github.event.inputs.merge }}
+        if: ${{ !inputs.merge }}
         run: |
           mkdir -p tmp/notes
           bin/rake "release_note:generate" | tee tmp/notes/core.txt
       - name: "Plan Version Bump"
-        if: ${{ !github.event.inputs.merge }}
+        if: ${{ !inputs.merge }}
         run: DRY_RUN=1 bin/rake version_bump:beta
       - name: "Merge Version Bump"
-        if: ${{ github.event.inputs.merge }}
+        if: ${{ inputs.merge }}
         run: SKIP_CONFIRMATION=1 bin/rake version_bump:beta
       - name: "Build PR Body"
-        if: ${{ !github.event.inputs.merge }}
+        if: ${{ !inputs.merge }}
         shell: ruby {0}
         run: |
           body = <<~BODY
@@ -92,7 +90,7 @@ jobs:
           puts body
           File.write("tmp/pr-body.txt", body)
       - name: Create/update PR
-        if: ${{ !github.event.inputs.merge }}
+        if: ${{ !inputs.merge }}
         run: |
           EXISTING_PR="$(gh pr list --head "version_bump/beta" --state open --json url --jq .[].url)"
           if [ -n "${EXISTING_PR}" ]; then
