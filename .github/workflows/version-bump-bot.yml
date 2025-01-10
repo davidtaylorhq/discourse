@@ -58,9 +58,9 @@ jobs:
           EXISTING_PR="$(gh pr list --head "version_bump/beta" --state open --json url --jq .[].url)"
           if [[ -n "${PR_URL}" ]]; then
               echo "PR already exists -> ${PR_URL}"
-              gh pr edit --title "$TITLE" --body "Updated body"
+              gh pr edit --title "$TITLE" --body "Updated body" --head "version_bump/beta"
           else
-              gh pr create --title "$TITLE" --body "Updated body" --draft
+              gh pr create --title "$TITLE" --body "Updated body" --draft --head "version_bump/beta"
           fi
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
