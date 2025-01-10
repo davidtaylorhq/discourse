@@ -33,12 +33,18 @@ jobs:
       - name: Symlink vendor/bundle from image
         run: |
           ln -s /var/www/discourse/vendor/bundle vendor/bundle
-      - name: "Bundle install"
-        run: bundle install
+          - name: Setup gems
+          run: |
+            gem install bundler --conservative -v $(awk '/BUNDLED WITH/ { getline; gsub(/ /,""); print $0 }' Gemfile.lock)
+            bundle config --local path vendor/bundle
+            bundle config --local deployment true
+            bundle config --local without development
+            bundle install --jobs 4
+            bundle clean
       - name: "Plan Version Bump"
         run: DRY_RUN=1 bin/rake version_bump:beta
       - name: Checkout new branch
-        run: git checkout -b version_bump/beta
+        run: git checkout version_bump/beta
       - uses: peter-evans/create-pull-request@v7
         with:
           branch: version_bump/beta
