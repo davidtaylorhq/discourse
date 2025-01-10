@@ -27,6 +27,9 @@ jobs:
           end
 
           new_description = `git log -1 --pretty=%b`
+          raise "Failed to get commit message" unless $?.success?
+
+          puts "Updating body to commit message...\n\n---\n#{new_description}\n---"
 
           puts "Updating PR body..."
           system "gh", "pr", "edit", ENV['PR_NUMBER'], "--body", new_description
@@ -40,4 +43,10 @@ jobs:
           COMMENT
 
           puts "Adding comment with original info..."
-          system "gh", "pr", "comment", ENV['PR_NUMBER'], "--body", comment, "--edit-last"    
+          command = ["gh", "pr", "comment", ENV['PR_NUMBER'], "--body", comment]
+          begin
+            system *command, "--edit-last", exception: true
+          rescue
+            puts "Failed to add comment, continuing..."
+            system *command, exception: true
+          end
