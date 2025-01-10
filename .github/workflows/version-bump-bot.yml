@@ -41,15 +41,27 @@ jobs:
           bundle config --local without development
           bundle install --jobs 4
           bundle clean
+      - name: Setup GH cli
+        run: |
+          (type -p wget >/dev/null || (sudo apt update && sudo apt-get install wget -y)) \
+            && sudo mkdir -p -m 755 /etc/apt/keyrings \
+                  && out=$(mktemp) && wget -nv -O$out https://cli.github.com/packages/githubcli-archive-keyring.gpg \
+                  && cat $out | sudo tee /etc/apt/keyrings/githubcli-archive-keyring.gpg > /dev/null \
+            && sudo chmod go+r /etc/apt/keyrings/githubcli-archive-keyring.gpg \
+            && echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" | sudo tee /etc/apt/sources.list.d/github-cli.list > /dev/null \
+            && sudo apt update \
+            && sudo apt install gh -y
       - name: "Plan Version Bump"
         run: DRY_RUN=1 bin/rake version_bump:beta
-      - name: Checkout new branch
-        run: git checkout version_bump/beta
-      # - uses: peter-evans/create-pull-request@v7
-      #   with:
-      #     branch: version_bump/beta
-      #     base: main
-      #     title: Prepare beta version bump
-      #     draft: true
-      #     body: |
-      #       Testing 123
+      - name: Create/update PR
+        run: |
+          EXISTING_PR="$(gh pr list --head "version_bump/beta" --state open --json url --jq .[].url)"
+          if [[ -n "${PR_URL}" ]]; then
+              echo "PR already exists -> ${PR_URL}"
+              gh pr edit --title "$TITLE" --body "Updated body"
+          else
+              gh pr create --title "$TITLE" --body "Updated body" --draft
+          fi
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TITLE: "Prepare beta version bump"
