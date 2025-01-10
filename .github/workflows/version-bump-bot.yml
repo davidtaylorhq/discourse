@@ -20,10 +20,19 @@ jobs:
       issues: read
       pull-requests: write
     steps:
+      - name: Set working directory owner
+        run: chown root:root .
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
           ref: 'main'
+      - name: Setup Git
+        run: |
+          git config --global user.email "ci@ci.invalid"
+          git config --global user.name "Discourse CI"
+      - name: Symlink vendor/bundle from image
+        run: |
+          ln -s /var/www/discourse/vendor/bundle vendor/bundle
       - name: "Bundle install"
         run: bundle install
       - name: "Plan Version Bump"
