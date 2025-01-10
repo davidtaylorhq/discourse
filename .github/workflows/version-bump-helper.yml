@@ -37,9 +37,10 @@ jobs:
   trigger-version-bump:
     if: | 
       github.event_name == 'issue_comment' &&
+        github.event.action == 'created' &&
         github.event.issue.pull_request &&
         github.event.comment.body == '@discoursebot merge version bump' &&
-        github.event.issue.author_association == 'MEMBER'
+        (github.event.comment.author_association == 'MEMBER' || github.event.comment.author_association == 'OWNER')
     name: trigger version bump
     runs-on: ubuntu-latest
     permissions:
