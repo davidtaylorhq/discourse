@@ -171,7 +171,7 @@ end
 def with_clean_worktree(origin_branch)
   origin_url = git("remote", "get-url", "origin").strip
 
-  if !test_mode? && !origin_url.include?("discourse/discourse")
+  if !test_mode? && !origin_url.include?("davidtaylorhq/discourse")
     raise "Expected 'origin' remote to point to discourse/discourse (got #{origin_url})"
   end
 
