@@ -65,6 +65,7 @@ rescue StandardError
 end
 
 def confirm(msg)
+  return if ENV["SKIP_CONFIRMATION"] == "1"
   loop do
     print "#{msg} (yes/no)..."
     break if test_mode?
