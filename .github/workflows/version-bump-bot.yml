@@ -51,7 +51,7 @@ jobs:
             && sudo apt update \
             && sudo apt install gh -y
       - name: Core release notes
-        run: bin/rake "release_note:generate | tee tmp/notes/core.txt
+        run: bin/rake "release_note:generate" | tee tmp/notes/core.txt
       - name: "Plan Version Bump"
         run: DRY_RUN=1 bin/rake version_bump:beta
       - name: "Build PR Body"
