@@ -55,7 +55,7 @@ jobs:
       - name: Create/update PR
         run: |
           EXISTING_PR="$(gh pr list --head "version_bump/beta" --state open --json url --jq .[].url)"
-          if [[ -n "${EXISTING_PR}" ]]; then
+          if [ -n "${EXISTING_PR}" ]; then
               echo "PR already exists -> ${EXISTING_PR}"
               gh pr edit --title "$TITLE" --body "Updated body" --head "version_bump/beta"
           else
