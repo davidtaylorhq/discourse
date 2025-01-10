@@ -44,7 +44,7 @@ jobs:
     steps:
       - name: "Confirm"
         run: |
-          branch=$(gh pr view ${{ github.event.issue.number }} --json headRefName -q '.headRefName')
+          branch=$(gh pr view ${{ github.event.issue.number }} --repo ${{ github.repository }} --json headRefName -q '.headRefName')
           if [ "$branch" != "version_bump/beta" ]; then
             gh pr comment ${{ github.event.issue.number }} --repo ${{ github.repository }} -b "Sorry, I don't recognize this PR"
             exit 1
