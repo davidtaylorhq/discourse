@@ -75,7 +75,9 @@ jobs:
 
             <details>
             <summary>Changelog</summary>
+            ```
             #{File.read("tmp/notes/core.txt")}
+            ```
             </details>
           BODY
           puts body
@@ -93,7 +95,7 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TITLE: "Prepare beta version bump"
   prevent-ready-for-review:
-    if: github.event_name == 'pull_request' && github.event.action == 'ready_for_review'
+    if: github.event_name == 'pull_request'
     name: Prevent Ready for Review
     runs-on: ubuntu-latest
     permissions:
