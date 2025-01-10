@@ -1,0 +1,30 @@
+name: Plan Version Bump
+
+on:
+  push:
+    branches:
+      - main
+
+concurrency:
+  group: plan-bump
+  cancel-in-progress: true
+
+jobs:
+  plan-version-bump:
+    name: Plan Version Bump
+    runs-on: ubuntu-latest
+    container: discourse/discourse_test:slim
+    timeout-minutes: 5
+    permissions:
+      contents: write
+      issues: read
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: 'main'
+      - name: "Bundle install"
+        run: bundle install
+      - name: "Plan Version Bump"
+        run: DRY_RUN=1 bin/rake version_bump:beta
