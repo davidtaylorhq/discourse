@@ -8,10 +8,7 @@ on:
       - ".github/labeler.yml"
       - "migrations/**"
   push:
-    branches:
-      - main
-      - beta
-      - stable
+    
     paths-ignore:
       - ".github/workflows/migration-tests.yml"
       - ".github/dependabot.yml"
