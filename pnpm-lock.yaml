@@ -83,7 +83,7 @@ importers:
         specifier: ^0.24.2
         version: 0.24.2
       eslint:
-        specifier: 9.15.0
+        specifier: ^9.15.0
         version: 9.15.0
       jsdoc:
         specifier: ^4.0.4
@@ -285,8 +285,8 @@ importers:
         specifier: ^3.0.1
         version: 3.0.1
       ace-builds:
-        specifier: ^1.37.4
-        version: 1.37.4
+        specifier: ^1.39.0
+        version: 1.39.0
       decorator-transforms:
         specifier: ^2.3.0
         version: 2.3.0(@babel/core@7.26.0)
@@ -2882,8 +2882,8 @@ packages:
     resolution: {integrity: sha512-PYAthTa2m2VKxuvSD3DPC/Gy+U+sOA1LAuT8mkmRuvw+NACSaeXEQ+NHcVF7rONl6qcaxV3Uuemwawk+7+SJLw==}
     engines: {node: '>= 0.6'}
 
-  ace-builds@1.37.4:
-    resolution: {integrity: sha512-niaXM/b7Nm6l/GKpc/jtG0jjExBOkqRN1pZbyV/ngb3GrQQF5fCB2032n5qaaAr7hWSGbc+PGfZ3C0LsmYQptA==}
+  ace-builds@1.39.0:
+    resolution: {integrity: sha512-MqoZojv4gpc5QyTMor/dS6kmruDV9db9LVZbCiT4qYz6WsDiv4qyG5f7ZPc+wjUl6oLMqgCAsBjo1whdSVyMlQ==}
 
   acorn-jsx@5.3.2:
     resolution: {integrity: sha512-rq9s+JNhf0IChjtDXxllJ7g41oZk5SlXtp0LHwyA5cejwn7vKmKp4pPri6YEePv2PU65sAsegbXtIinmDFDXgQ==}
@@ -6038,6 +6038,7 @@ packages:
 
   lodash.get@4.4.2:
     resolution: {integrity: sha512-z+Uw/vLuy6gQe8cfaFWD7p0wVv8fJl3mbzXh33RS+0oW2wvUqiRXiQ69gLWSLpgB5/6sU+r6BlQR0MBILadqTQ==}
+    deprecated: This package is deprecated. Use the optional chaining (?.) operator instead.
 
   lodash.isarguments@3.1.0:
     resolution: {integrity: sha512-chi4NHZlZqZD18a0imDHnZPrDeBbTtVN7GXMwuGdRH9qotxAjYs3aVLKc7zNOG9eddR5Ksd8rvFEBc9SsggPpg==}
@@ -6053,6 +6054,7 @@ packages:
 
   lodash.omit@4.5.0:
     resolution: {integrity: sha512-XeqSp49hNGmlkj2EJlfrQFIzQ6lXdNro9sddtQzcJY8QaoC2GO0DT7xaIokHeyM+mIT0mPMlPvkYzg2xCuHdZg==}
+    deprecated: This package is deprecated. Use destructuring assignment syntax instead.
 
   lodash.uniq@4.5.0:
     resolution: {integrity: sha512-xfBaXQd9ryd9dlSDvnvI0lvxfLJlYAZzXomUYzLKtUeOQvOP5piqAWuGtrhWeqaXK9hhoM/iyJc5AV+XfsX3HQ==}
@@ -10695,7 +10697,7 @@ snapshots:
       mime-types: 2.1.35
       negotiator: 0.6.3
 
-  ace-builds@1.37.4: {}
+  ace-builds@1.39.0: {}
 
   acorn-jsx@5.3.2(acorn@8.14.0):
     dependencies:
