@@ -231,4 +231,31 @@ RSpec.describe "tasks/version_bump" do
       expect(run("git", "show", "main:secondfile.txt")).to eq("contents")
     end
   end
+
+  it "can create a new release branch" do
+    latest_hash, previous_hash = nil
+
+    Dir.chdir(local_path) do
+      File.write("lib/version.rb", fake_version_rb("2025.01.0-latest"))
+      run "git", "add", "."
+      run "git", "commit", "-m", "developing 2025.01"
+
+      previous_hash = run("git", "rev-parse", "HEAD").strip
+
+      File.write("lib/version.rb", fake_version_rb("2025.02.0-latest"))
+      run "git", "add", "."
+      run "git", "commit", "-m", "begin development of 2025.02-latest"
+
+      latest_hash = run("git", "rev-parse", "HEAD").strip
+
+      output = capture_stdout { invoke_rake_task("version_bump:maybe_cut_branch", latest_hash) }
+      expect(output).to include("Created new branch")
+    end
+
+    Dir.chdir(origin_path) do
+      run "git", "checkout", "release/2025.01"
+      branch_tip = run("git", "rev-parse", "HEAD").strip
+      expect(branch_tip).to eq(previous_hash)
+    end
+  end
 end
