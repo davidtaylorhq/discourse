@@ -101,14 +101,18 @@ def make_commits(commits:, branch:, base:)
   )
 end
 
-def make_pr(base:, branch:, title:)
+def make_pr(base:, branch:, title:, gh_cli: false)
   params = { expand: 1, title: title, body: <<~MD }
       > :warning: This PR should not be merged via the GitHub web interface
       >
       > It should only be merged (via fast-forward) using the associated `bin/rake version_bump:*` task.
     MD
 
-  if !test_mode?
+  return if test_mode?
+
+  if gh_cli
+    system("gh pr create --base #{base} --head #{branch} --title #{title} --body #{params[:body]}")
+  else
     open_command =
       case RbConfig::CONFIG["host_os"]
       when /darwin|mac os/
@@ -126,9 +130,9 @@ def make_pr(base:, branch:, title:)
       "https://github.com/discourse/discourse/compare/#{base}...#{branch}?#{params.to_query}",
       exception: true,
     )
-  end
 
-  puts "Do not merge the PR via the GitHub web interface. Get it approved, then come back here to continue."
+    puts "Do not merge the PR via the GitHub web interface. Get it approved, then come back here to continue."
+  end
 end
 
 def fastforward(base:, branch:)
@@ -407,4 +411,45 @@ task "version_bump:stage_security_fixes", [:base] do |t, args|
     make_pr(base: base, branch: branch, title: "Security fixes for #{base}")
     fastforward(base: base, branch: branch)
   end
+end
+
+desc "Check a commit hash and create a release branch if it's a trigger"
+task "version_bump:maybe_cut_branch", [:check_ref] do |t, args|
+  check_ref = args[:check_ref]
+
+  with_clean_worktree("main") do
+    git("checkout", "#{check_ref}")
+    new_version = parse_current_version
+
+    git("checkout", "#{check_ref}^1")
+    previous_version = parse_current_version
+
+    return "version has not changed" if new_version == previous_version
+
+    raise "Unexpected previous version" if !previous_version.ends_with? "-latest"
+    raise "Unexpected new version" if !new_version.ends_with? "-latest"
+    if Gem::Version.new(new_version) < Gem::Version.new(previous_version)
+      raise "New version is smaller than old version"
+    end
+
+    parts = previous_version.split(".")
+    new_branch_name = "release/#{parts[0]}.#{parts[1]}"
+
+    git("branch", new_branch_name)
+    git("push", "--set-upstream", "origin", new_branch_name)
+    puts "Created new branch #{new_branch_name}"
+  end
+
+  puts "Done!"
+end
+
+desc "Maybe tag release"
+task "version_bump:maybe_tag_release", [:check_ref] do |t, args|
+  check_ref = args[:check_ref]
+
+  with_clean_worktree("main") do
+    #todo
+  end
+
+  puts "Done!"
 end
