@@ -435,8 +435,14 @@ task "version_bump:maybe_cut_branch", [:check_ref] do |t, args|
     new_branch_name = "release/#{parts[0]}.#{parts[1]}"
 
     git("branch", new_branch_name)
-    git("push", "--set-upstream", "origin", new_branch_name)
     puts "Created new branch #{new_branch_name}"
+
+    if dry_run?
+      puts "[DRY RUN] Skipping pushing branch #{new_branch_name} to origin"
+    else
+      git("push", "--set-upstream", "origin", new_branch_name)
+      puts "Pushed branch #{new_branch_name} to origin"
+    end
   end
 
   puts "Done!"
@@ -447,7 +453,34 @@ task "version_bump:maybe_tag_release", [:check_ref] do |t, args|
   check_ref = args[:check_ref]
 
   with_clean_worktree("main") do
-    #todo
+    git "checkout", "#{check_ref}"
+    # Find all branches (local and remote) containing this commit
+    release_branches = git("branch", "-a", "--contains", check_ref, "release/*").lines.map(&:strip)
+    if release_branches.empty?
+      puts "Commit #{check_ref} is not on a release/* branch. Skipping"
+      next
+    end
+
+    current_version = parse_current_version
+    is_prerelease = current_version.include?("-")
+
+    if is_prerelease
+      puts "Current version #{current_version} is a prerelease. Skipping"
+      next
+    else
+      tag_name = "v#{current_version}"
+      if ref_exists?(tag_name)
+        puts "Tag #{tag_name} already exists, skipping"
+      else
+        puts "Tagging release #{tag_name}"
+        git "tag", "-a", tag_name, "-m", "version #{current_version}"
+        if dry_run?
+          puts "[DRY RUN] Skipping pushing tag to origin"
+        else
+          git "push", "origin", "refs/tags/#{tag_name}"
+        end
+      end
+    end
   end
 
   puts "Done!"

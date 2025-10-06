@@ -232,6 +232,60 @@ RSpec.describe "tasks/version_bump" do
     end
   end
 
+  describe "version_bump:maybe_tag_release" do
+    it "does not tag if commit is not on a release/* branch" do
+      Dir.chdir(local_path) do
+        File.write("lib/version.rb", fake_version_rb("2025.06.0"))
+        run "git", "add", "."
+        run "git", "commit", "-m", "release 2025.06.0"
+        commit_hash = run("git", "rev-parse", "HEAD").strip
+        # Not on a release/* branch, should not tag
+        capture_stdout { invoke_rake_task("version_bump:maybe_tag_release", commit_hash) }
+        # Should not tag, so v2025.06.0 should not exist
+        expect(run("git", "tag").lines.map(&:strip)).not_to include("v2025.06.0")
+      end
+    end
+    it "tags a release if not a prerelease and tag does not exist" do
+      Dir.chdir(local_path) do
+        File.write("lib/version.rb", fake_version_rb("2025.03.0"))
+        run "git", "add", "."
+        run "git", "commit", "-m", "release 2025.03.0"
+        commit_hash = run("git", "rev-parse", "HEAD").strip
+        run "git", "branch", "release/2025.03"
+        output = capture_stdout { invoke_rake_task("version_bump:maybe_tag_release", commit_hash) }
+        expect(output).to include("Tagging release v2025.03.0")
+        expect(run("git", "tag").lines.map(&:strip)).to include("v2025.03.0")
+      end
+    end
+
+    it "skips tagging if version is a prerelease" do
+      Dir.chdir(local_path) do
+        File.write("lib/version.rb", fake_version_rb("2025.04.0-latest"))
+        run "git", "add", "."
+        run "git", "commit", "-m", "release 2025.04.0-latest"
+        commit_hash = run("git", "rev-parse", "HEAD").strip
+        run "git", "branch", "release/2025.04"
+        output = capture_stdout { invoke_rake_task("version_bump:maybe_tag_release", commit_hash) }
+        expect(output).to include("is a prerelease. Skipping")
+        expect(run("git", "tag").lines.map(&:strip)).not_to include("v2025.04.0-latest")
+      end
+    end
+
+    it "skips tagging if tag already exists" do
+      Dir.chdir(local_path) do
+        File.write("lib/version.rb", fake_version_rb("2025.05.0"))
+        run "git", "add", "."
+        run "git", "commit", "-m", "release 2025.05.0"
+        commit_hash = run("git", "rev-parse", "HEAD").strip
+        run "git", "branch", "release/2025.05"
+        # Create tag manually
+        run "git", "tag", "-a", "v2025.05.0", "-m", "version 2025.05.0"
+        output = capture_stdout { invoke_rake_task("version_bump:maybe_tag_release", commit_hash) }
+        expect(output).to include("Tag v2025.05.0 already exists, skipping")
+      end
+    end
+  end
+
   it "can create a new release branch" do
     latest_hash, previous_hash = nil
 
