@@ -263,3 +263,33 @@ task "release:maybe_tag_release", [:check_ref] do |t, args|
 
   puts "Done!"
 end
+
+desc "Prepare a version bump PR for `main`"
+task "version_bump:prepare_next_version" do |t, args|
+  pr_branch_name = "version-bump/main"
+
+  branch = args[:branch]
+
+  with_clean_worktree(branch) do
+    git "branch", "-D", pr_branch_name if ref_exists?(branch)
+    git "checkout", "-b", pr_branch_name
+
+    current_version = parse_current_version
+
+    target_version_number = "#{Time.now.strftime("%Y.%m")}.0-latest"
+
+    if Gem::Version.new(target_version_number) <= Gem::Version.new(current_version)
+      # We're going to try and keep versions aligned with months. But if not, this logic will kick in:
+      puts "Target version #{current_version} is already >= #{target_version_number}. Incrementing instead."
+      major, minor, patch_and_pre = current_version.split(".")
+      minor = (minor.to_i + 1).to_s.rjust(2, "0")
+      target_version_number = "#{major}.#{minor}.#{patch_and_pre}"
+    end
+
+    write_version(target_version_number)
+    git "add", "lib/version.rb"
+    git "commit",
+        "-m",
+        "Begin development of v#{target_version_number}\n\nMerging this will trigger the creation of a 'release/#{current_version.sub(".0-latest", "")}' branch on the preceding commit."
+  end
+end
