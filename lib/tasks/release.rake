@@ -207,7 +207,7 @@ namespace :release do
   end
 
   desc "Prepare version bump"
-  task "prepare_next_version", [:branch] do |t, args|
+  task "prepare_next_version_branch", [:branch] do |t, args|
     branch = args[:branch]
 
     raise "Expected branch to start with 'release/'" if !branch.starts_with?("release/")
