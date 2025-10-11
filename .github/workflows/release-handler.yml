@@ -1,6 +1,12 @@
 name: Release - handle
 
 on:
+  workflow_dispatch:
+    inputs:
+      sha:
+        description: "The commit SHA to prepare the release for"
+        required: false
+        type: string
   push:
     branches:
       - main
@@ -44,8 +50,7 @@ jobs:
 
       - name: Maybe cut branch
         if: github.ref == 'refs/heads/main'
-        run: bin/rake release:maybe_cut_branch
-
+        run: bin/rake release:maybe_cut_branch[${{ inputs.sha || github.sha }}]
       - name: Maybe tag release
         if: startsWith(github.ref, 'refs/heads/release/')
-        run: bin/rake release:maybe_tag_release
+        run: bin/rake release:maybe_tag_release[${{ inputs.sha || github.sha }}]
