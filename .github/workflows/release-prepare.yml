@@ -1,0 +1,49 @@
+name: Release - prepare next version
+
+on:
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: "The release branch to prepare the next version for, e.g. `release/2015.11`"
+        required: true
+        type: string
+  push:
+    branches:
+      - release/*
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  build:
+    name: run
+    runs-on: ubuntu-latest
+    container: discourse/discourse_test:slim
+    timeout-minutes: 10
+
+    steps:
+      - name: Set working directory owner
+        run: chown root:root .
+
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Bundler cache
+        uses: actions/cache@v4
+        with:
+          path: vendor/bundle
+          key: ${{ runner.os }}-gem-${{ hashFiles('**/Gemfile.lock') }}
+          restore-keys: ${{ runner.os }}-gem-
+
+      - name: Setup gems
+        run: |
+          bundle config --local path vendor/bundle
+          bundle config --local deployment true
+          bundle config --local without development
+          bundle install --jobs 4
+          bundle clean
+
+      - name: Create a PR for the next version bump
+        run: bin/rake "release:prepare_next_version_branch[${{ inputs.branch || github.ref_name }}]"
