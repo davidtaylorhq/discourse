@@ -132,4 +132,73 @@ RSpec.describe "tasks/version_bump" do
       expect(branch_tip).to eq(previous_hash)
     end
   end
+
+  describe "release:prepare_next_version" do
+    it "bumps version to current month format when current version is older" do
+      Dir.chdir(local_path) do
+        File.write("lib/version.rb", fake_version_rb("2024.01.0-latest"))
+        run "git", "add", "."
+        run "git", "commit", "-m", "old version"
+        run "git", "push", "origin", "main"
+
+        freeze_time Time.utc(2025, 10, 15) do
+          capture_stdout { invoke_rake_task("release:prepare_next_version") }
+        end
+      end
+
+      Dir.chdir(origin_path) do
+        run "git", "reset", "--hard"
+        run "git", "checkout", "version-bump/main"
+        version_rb_content = File.read("lib/version.rb")
+        expect(version_rb_content).to include('STRING = "2025.10.0-latest"')
+      end
+    end
+
+    it "increments minor version when current version is already >= target month version" do
+      Dir.chdir(local_path) do
+        File.write("lib/version.rb", fake_version_rb("2025.10.0-latest"))
+        run "git", "add", "."
+        run "git", "commit", "-m", "current month version"
+        run "git", "push", "origin", "main"
+
+        freeze_time Time.utc(2025, 10, 15) do
+          output = capture_stdout { invoke_rake_task("release:prepare_next_version") }
+          expect(output).to include("is already >= 2025.10.0-latest. Incrementing instead.")
+        end
+      end
+
+      Dir.chdir(origin_path) do
+        run "git", "reset", "--hard"
+        run "git", "checkout", "version-bump/main"
+        version_rb_content = File.read("lib/version.rb")
+        expect(version_rb_content).to include('STRING = "2025.11.0-latest"')
+      end
+    end
+
+    it "creates version-bump/main branch with proper commit message" do
+      Dir.chdir(local_path) do
+        File.write("lib/version.rb", fake_version_rb("2025.05.0-latest"))
+        run "git", "add", "."
+        run "git", "commit", "-m", "previous version"
+        run "git", "push", "origin", "main"
+
+        freeze_time Time.utc(2025, 10, 15) do
+          capture_stdout { invoke_rake_task("release:prepare_next_version") }
+        end
+      end
+
+      Dir.chdir(origin_path) do
+        run "git", "reset", "--hard"
+        run "git", "checkout", "version-bump/main"
+        current_branch = run("git", "branch", "--show-current").strip
+        expect(current_branch).to eq("version-bump/main")
+
+        commit_message = run("git", "log", "-1", "--pretty=%B").strip
+        expect(commit_message).to include("Begin development of v2025.10.0-latest")
+        expect(commit_message).to include(
+          "Merging this will trigger the creation of a 'release/2025.05' branch",
+        )
+      end
+    end
+  end
 end
