@@ -1,4 +1,4 @@
-name: Release - prepare next version
+name: Release - prepare release bump
 
 on:
   workflow_dispatch:
