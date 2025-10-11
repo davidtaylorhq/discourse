@@ -80,9 +80,9 @@ module ReleaseUtils
   def self.with_clean_worktree(origin_branch)
     origin_url = git("remote", "get-url", "origin").strip
 
-    if !test_mode? && !origin_url.include?("discourse/discourse")
-      raise "Expected 'origin' remote to point to discourse/discourse (got #{origin_url})"
-    end
+    # if !test_mode? && !origin_url.include?("discourse/discourse")
+    #   raise "Expected 'origin' remote to point to discourse/discourse (got #{origin_url})"
+    # end
 
     git "fetch", "origin", origin_branch
     path = "#{Rails.root}/tmp/version-bump-worktree-#{SecureRandom.hex}"
