@@ -62,8 +62,6 @@ module ReleaseUtils
     return if test_mode?
 
     args = [
-      "-R",
-      "davidtaylorhq/discourse",
       "--base",
       base,
       "--head",
