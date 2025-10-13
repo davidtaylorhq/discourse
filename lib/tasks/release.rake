@@ -148,30 +148,27 @@ namespace :release do
     ReleaseUtils.with_clean_worktree("main") do
       ReleaseUtils.git "checkout", check_ref.to_s
       release_branches =
-        ReleaseUtils.git("branch", "-a", "--contains", check_ref, "release/*").lines.map(&:strip)
+        ReleaseUtils
+          .git("branch", "-a", "--contains", check_ref, "release/*", "latest")
+          .lines
+          .map(&:strip)
       if release_branches.empty?
-        puts "Commit #{check_ref} is not on a release/* branch. Skipping"
+        puts "Commit #{check_ref} is not on a release branch. Skipping"
         next
       end
 
       current_version = ReleaseUtils.parse_current_version
-      is_prerelease = current_version.include?("-")
 
-      if is_prerelease
-        puts "Current version #{current_version} is a prerelease. Skipping"
-        next
+      tag_name = "v#{current_version}"
+      if ReleaseUtils.ref_exists?(tag_name)
+        puts "Tag #{tag_name} already exists, skipping"
       else
-        tag_name = "v#{current_version}"
-        if ReleaseUtils.ref_exists?(tag_name)
-          puts "Tag #{tag_name} already exists, skipping"
+        puts "Tagging release #{tag_name}"
+        ReleaseUtils.git "tag", "-a", tag_name, "-m", "version #{current_version}"
+        if ReleaseUtils.dry_run?
+          puts "[DRY RUN] Skipping pushing tag to origin"
         else
-          puts "Tagging release #{tag_name}"
-          ReleaseUtils.git "tag", "-a", tag_name, "-m", "version #{current_version}"
-          if ReleaseUtils.dry_run?
-            puts "[DRY RUN] Skipping pushing tag to origin"
-          else
-            ReleaseUtils.git "push", "origin", "refs/tags/#{tag_name}"
-          end
+          ReleaseUtils.git "push", "origin", "refs/tags/#{tag_name}"
         end
       end
     end
