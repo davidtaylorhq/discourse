@@ -49,8 +49,14 @@ jobs:
           bundle clean
 
       - name: Maybe cut branch
+        id: maybe-cut-branch
         if: github.ref == 'refs/heads/main'
         run: bin/rake release:maybe_cut_branch[${{ inputs.sha || github.sha }}]
+
+      - name: Maybe trigger prepare next version
+        if: steps.maybe-cut-branch.outputs.new_branch_name
+        run: gh workflow run release-prepare.yml -f new_branch_name=${{ steps.maybe-cut-branch.outputs.new_branch_name }}
+
       - name: Maybe tag release
         if: startsWith(github.ref, 'refs/heads/release/')
         run: bin/rake release:maybe_tag_release[${{ inputs.sha || github.sha }}]
