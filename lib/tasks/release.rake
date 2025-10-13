@@ -203,7 +203,7 @@ namespace :release do
       ReleaseUtils.git "add", "lib/version.rb"
       ReleaseUtils.git "commit",
                        "-m",
-                       "DEV: Begin development of v#{target_version_number}\n\nMerging this will trigger the creation of a 'release/#{current_version.sub(".0-latest", "")}' branch on the preceding commit."
+                       "DEV: Begin development of v#{target_version_number}\n\nMerging this will trigger the creation of a `release/#{current_version.sub(".0-latest", "")}` branch on the preceding commit."
       ReleaseUtils.git "push", "-f", "--set-upstream", "origin", pr_branch_name
 
       ReleaseUtils.make_pr(base: branch, branch: pr_branch_name)
