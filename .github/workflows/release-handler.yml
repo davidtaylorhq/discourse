@@ -69,6 +69,8 @@ jobs:
       - name: Maybe trigger prepare next version
         if: steps.maybe-cut-branch.outputs.new_branch_name
         run: gh workflow run release-prepare.yml -f new_branch_name=${{ steps.maybe-cut-branch.outputs.new_branch_name }}
+        env:
+          GH_TOKEN: ${{ github.token }}
 
       - name: Maybe tag release
         if: startsWith(github.ref, 'refs/heads/release/')
