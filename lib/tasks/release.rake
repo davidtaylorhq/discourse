@@ -124,6 +124,12 @@ namespace :release do
       ReleaseUtils.git("branch", new_branch_name)
       puts "Created new branch #{new_branch_name}"
 
+      File.write(
+        ENV["GITHUB_OUTPUT"] || "/dev/null",
+        "new_branch_name=#{new_branch_name}\n",
+        mode: "a",
+      )
+
       if ReleaseUtils.dry_run?
         puts "[DRY RUN] Skipping pushing branch #{new_branch_name} to origin"
       else
