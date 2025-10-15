@@ -61,18 +61,11 @@ module ReleaseUtils
   def self.make_pr(base:, branch:)
     return if test_mode?
 
-    args = [
-      "--base",
-      base,
-      "--head",
-      branch,
-      "--title",
-      `git log -1 --pretty=%s`.strip,
-      "--body",
-      `git log -1 --pretty=%b`.strip,
-    ]
+    args = ["--title", `git log -1 --pretty=%s`.strip, "--body", `git log -1 --pretty=%b`.strip]
 
-    success = system("gh", "pr", "create", *args) || system("gh", "pr", "edit", *args)
+    success =
+      system("gh", "pr", "create", "--base", base, "--head", branch, *args) ||
+        system("gh", "pr", "edit", branch, *args)
 
     raise "Failed to create or update PR" unless success
   end
@@ -232,7 +225,9 @@ namespace :release do
 
       ReleaseUtils.write_version(target_version_number)
       ReleaseUtils.git "add", "lib/version.rb"
-      ReleaseUtils.git "commit", "-m", "DEV: Bump version on `#{branch}` to `v#{target_version_number}`"
+      ReleaseUtils.git "commit",
+                       "-m",
+                       "DEV: Bump version on `#{branch}` to `v#{target_version_number}`"
       ReleaseUtils.git "push", "-f", "--set-upstream", "origin", pr_branch_name
 
       ReleaseUtils.make_pr(base: branch, branch: pr_branch_name)
