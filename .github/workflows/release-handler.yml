@@ -75,5 +75,4 @@ jobs:
           GH_TOKEN: ${{ github.token }}
 
       - name: Maybe tag release
-        if: startsWith(github.ref, 'refs/heads/release/')
         run: bin/rake release:maybe_tag_release[${{ inputs.sha || github.sha }}]
