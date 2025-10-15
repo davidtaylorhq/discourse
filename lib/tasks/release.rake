@@ -149,7 +149,7 @@ namespace :release do
       ReleaseUtils.git "checkout", check_ref.to_s
       release_branches =
         ReleaseUtils
-          .git("branch", "-a", "--contains", check_ref, "release/*", "latest")
+          .git("branch", "-a", "--contains", check_ref, "release/*", "main")
           .lines
           .map(&:strip)
       if release_branches.empty?
@@ -232,7 +232,7 @@ namespace :release do
 
       ReleaseUtils.write_version(target_version_number)
       ReleaseUtils.git "add", "lib/version.rb"
-      ReleaseUtils.git "commit", "-m", "DEV: Bump version to v#{target_version_number}"
+      ReleaseUtils.git "commit", "-m", "DEV: Bump version on `#{branch}` to v#{target_version_number}"
       ReleaseUtils.git "push", "-f", "--set-upstream", "origin", pr_branch_name
 
       ReleaseUtils.make_pr(base: branch, branch: pr_branch_name)
