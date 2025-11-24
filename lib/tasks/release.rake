@@ -135,15 +135,33 @@ namespace :release do
       current_version = ReleaseUtils.parse_current_version
 
       tag_name = "v#{current_version}"
+
+      existing_releases =
+        ReleaseUtils
+          .git("tag", "-l", "v*")
+          .lines
+          .map { |tag| Gem::Version.new(tag.strip.delete_prefix("v")) }
+          .sort
+
       if ReleaseUtils.ref_exists?(tag_name)
         puts "Tag #{tag_name} already exists, skipping"
       else
         puts "Tagging release #{tag_name}"
         ReleaseUtils.git "tag", "-a", tag_name, "-m", "version #{current_version}"
+
         if ReleaseUtils.dry_run?
           puts "[DRY RUN] Skipping pushing tag to origin"
         else
           ReleaseUtils.git "push", "origin", "refs/tags/#{tag_name}"
+        end
+
+        if existing_releases.last && Gem::Version.new(current_version) > existing_releases.last
+          ReleaseUtils.git "tag", "-a", "release", "-m", "latest release"
+          if ReleaseUtils.dry_run?
+            puts "[DRY RUN] Skipping pushing 'release' tag to origin"
+          else
+            ReleaseUtils.git "push", "origin", "-f", "refs/tags/release"
+          end
         end
       end
     end
