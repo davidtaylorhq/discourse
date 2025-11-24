@@ -1,4 +1,4 @@
-name: Release - create tags/branches
+name: Release - create tags & branches
 
 on:
   workflow_dispatch:
