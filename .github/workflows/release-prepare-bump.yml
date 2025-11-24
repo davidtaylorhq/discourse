@@ -10,6 +10,8 @@ on:
   push:
     branches:
       - release/*
+    paths-ignore: # a version bump on a release branch should not trigger another version bump PR
+      - 'lib/version.rb'
 
 permissions:
   contents: write
