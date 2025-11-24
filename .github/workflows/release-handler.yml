@@ -1,4 +1,4 @@
-name: Release - handle
+name: Release - create tags/branches
 
 on:
   workflow_dispatch:
@@ -41,7 +41,7 @@ jobs:
 
       - name: Maybe trigger prepare next version
         if: steps.maybe-cut-branch.outputs.new_branch_name
-        run: gh workflow run release-prepare.yml -f branch="${{ steps.maybe-cut-branch.outputs.new_branch_name }}"
+        run: gh workflow run release-prepare-bump.yml -f branch="${{ steps.maybe-cut-branch.outputs.new_branch_name }}"
         env:
           GH_TOKEN: ${{ github.token }}
 
