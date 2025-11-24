@@ -3,6 +3,7 @@ runs:
   using: "composite"
   steps:
     - name: Install gh cli
+      shell: bash
       run: |
         # https://github.com/cli/cli/blob/trunk/docs/install_linux.md#debian-ubuntu-linux-raspberry-pi-os-apt
         (type -p wget >/dev/null || (sudo apt update && sudo apt install wget -y)) \
@@ -16,6 +17,7 @@ runs:
           && sudo apt install gh -y
 
     - name: Set working directory owner
+      shell: bash
       run: chown root:root .
 
     - name: Bundler cache
@@ -26,6 +28,7 @@ runs:
         restore-keys: ${{ runner.os }}-gem-
 
     - name: Setup gems
+      shell: bash
       run: |
         bundle config --local path vendor/bundle
         bundle config --local deployment true
