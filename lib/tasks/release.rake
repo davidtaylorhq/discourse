@@ -103,7 +103,7 @@ namespace :release do
       ReleaseUtils.git("checkout", "#{check_ref}^1")
       previous_version = ReleaseUtils.parse_current_version
 
-      return "version has not changed" if new_version == previous_version
+      next "version has not changed" if new_version == previous_version
 
       raise "Unexpected previous version" if !previous_version.ends_with? "-latest"
       raise "Unexpected new version" if !new_version.ends_with? "-latest"
