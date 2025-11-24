@@ -6,7 +6,7 @@ module ReleaseUtils
   end
 
   def self.test_mode?
-    ENV["RUNNING_VERSION_BUMP_IN_RSPEC_TESTS"] == "1"
+    ENV["RUNNING_RELEASE_IN_RSPEC_TESTS"] == "1"
   end
 
   def self.read_version_rb
@@ -38,24 +38,6 @@ module ReleaseUtils
     true
   rescue StandardError
     false
-  end
-
-  def self.confirm(msg)
-    loop do
-      print "#{msg} (yes/no)..."
-      break if test_mode?
-
-      response = $stdin.gets.strip
-
-      case response.downcase
-      when "no"
-        raise "Aborted"
-      when "yes"
-        break
-      else
-        puts "unknown response: #{response}"
-      end
-    end
   end
 
   def self.make_pr(base:, branch:)
