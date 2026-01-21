@@ -125,7 +125,7 @@ backport_versions.each do |version|
     run("git", "push", "-f", "origin", backport_branch)
 
     # Create or update PR
-    backport_title = "#{pr_title} [backport]"
+    backport_title = "#{pr_title} [backport #{version}]"
     backport_body = <<~BODY
       Backport of ##{pr_number} to #{release_branch}.
 
