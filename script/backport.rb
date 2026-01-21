@@ -12,8 +12,8 @@ def run(*cmd, allow_failure: false)
   [stdout.strip, status.success?]
 end
 
-def gh(*args)
-  run("gh", *args)
+def gh(*args, allow_failure: false)
+  run("gh", *args, allow_failure: allow_failure)
 end
 
 pr_number = ENV.fetch("PR_NUMBER")
