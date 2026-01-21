@@ -91,7 +91,7 @@ backport_versions.each do |version|
 
   # Check if release branch exists
   branch_exists, = run("git", "ls-remote", "--heads", "origin", release_branch)
-  if branch_exists.exclude?(release_branch)
+  if !branch_exists.include?(release_branch)
     puts "Release branch #{release_branch} does not exist, skipping"
     results << { version: version, success: false, error: "Release branch does not exist" }
     next

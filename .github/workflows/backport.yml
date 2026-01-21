@@ -25,6 +25,14 @@ jobs:
             /repos/${{ github.repository }}/issues/comments/${{ github.event.comment.id }}/reactions \
             -f content='+1'
 
+      - name: Post start comment
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh pr comment ${{ github.event.issue.number }} \
+            --repo ${{ github.repository }} \
+            --body "Backport started. [View logs](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})"
+
       - name: Checkout
         uses: actions/checkout@v6
         with:
