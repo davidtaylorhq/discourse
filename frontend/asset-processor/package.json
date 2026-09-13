@@ -17,7 +17,7 @@
     "@csstools/postcss-light-dark-function": "^3.0.3",
     "@rollup/browser": "^4.63.1",
     "@rollup/plugin-babel": "^7.0.0",
-    "autoprefixer": "^10.5.4",
+    "autoprefixer": "^10.5.5",
     "babel-plugin-ember-template-compilation": "^4.0.0",
     "content-tag": "^4.0.0",
     "core-js": "^3.50.0",
