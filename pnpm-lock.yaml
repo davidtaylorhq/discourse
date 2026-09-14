@@ -473,8 +473,8 @@ importers:
         specifier: ^8.0.4
         version: 8.0.4
       '@colors/colors':
-        specifier: ^1.6.0
-        version: 1.6.0
+        specifier: ^1.6.1
+        version: 1.6.1
       '@discourse/itsatrap':
         specifier: ^2.0.10
         version: 2.0.10
@@ -1753,6 +1753,10 @@ packages:
 
   '@colors/colors@1.6.0':
     resolution: {integrity: sha512-Ir+AOibqzrIsL6ajt3Rz3LskB7OiMVHqltZmspbW/TJuTVuyOMirVqAkjfY6JISiLHgyNqicAC8AyHHGzNd/dA==}
+    engines: {node: '>=0.1.90'}
+
+  '@colors/colors@1.6.1':
+    resolution: {integrity: sha512-dTmUJzXSuayBK+hZydEaXd2mhx61qWQwkwaBBY6LyEOVx/L9aQU5ac8eFNEsd9nrD1+zb9zvDCphLSe8g1F4Qw==}
     engines: {node: '>=0.1.90'}
 
   '@csstools/color-helpers@5.1.0':
@@ -9486,6 +9490,8 @@ snapshots:
     optional: true
 
   '@colors/colors@1.6.0': {}
+
+  '@colors/colors@1.6.1': {}
 
   '@csstools/color-helpers@5.1.0': {}
 
@@ -17461,7 +17467,7 @@ snapshots:
 
   winston@3.14.2:
     dependencies:
-      '@colors/colors': 1.6.0
+      '@colors/colors': 1.6.1
       '@dabh/diagnostics': 2.0.3
       async: 3.2.6
       is-stream: 2.0.1
