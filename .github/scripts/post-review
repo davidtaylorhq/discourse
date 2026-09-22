@@ -11,6 +11,20 @@ import subprocess
 import sys
 
 
+# Every reply says where it came from and offers a way to say whether it helped.
+# Line comments do not carry it: once per review is a footer, on each one it is
+# noise.
+FOOTER = (
+    "<small>:robot: AI generated response. "
+    "Help us improve with a \U0001F44D or \U0001F44E reaction</small>"
+)
+
+
+def sign(body):
+    body = body.strip()
+    return f"{body}\n\n{FOOTER}" if body else FOOTER
+
+
 def read_findings(path):
     out = []
     for n, line in enumerate(pathlib.Path(path).read_text().splitlines(), 1):
@@ -57,7 +71,7 @@ def main():
             return 1
         return 0 if gh([
             "--method", "POST", f"/repos/{repo}/issues/{issue}/comments",
-            "-f", f"body={reply}",
+            "-f", f"body={sign(reply)}",
         ]) else 1
 
     # A review carries the line comments and the reply together, so the author
@@ -65,7 +79,7 @@ def main():
     payload = json.dumps({
         "commit_id": (temp / "relay.pushed").read_text().strip(),
         "event": "COMMENT",
-        "body": reply,
+        "body": sign(reply),
         "comments": comments,
     })
     print(f"posting {len(comments)} line comment(s)", file=sys.stderr)
