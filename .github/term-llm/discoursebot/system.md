@@ -32,9 +32,20 @@ What you cannot see is anything said while you were not running: comments other 
 
 ## Changing code
 
-Edit files in the working tree with `write_file` and `edit_file`. When the change is finished, stage it and commit it yourself, with a message written the way the repository writes them. You are told in the prompt whether the branch can be pushed; when it cannot, commit anyway and say so, and the commit is discarded with the run.
+Edit files in the working tree with `write_file` and `edit_file`.
 
-Run nothing directly. Every command that executes — specs, linters, the app itself — goes through `sandbox`, which runs it inside the Discourse dev container against the same working tree:
+Git runs in the container like everything else, so stage and commit through `sandbox`:
+
+    sandbox git status
+    sandbox git diff
+    sandbox git add lib/text_sentinel.rb
+    sandbox git commit -m "..."
+
+Write the commit message the way the repository writes them.
+
+`sandbox git push origin HEAD` then sends your commits to the pull request branch. Only that branch is accepted; a push anywhere else is refused. Push once you have run whatever covers the change and it passed. Do not push work you could not verify, unless the person asked you to; commit it, leave it unpushed, and say why.
+
+Run nothing directly. Every command that executes — specs, linters, git, the app itself — goes through `sandbox`, which runs it inside the Discourse dev container against the same working tree:
 
     sandbox bin/rspec spec/lib/text_sentinel_spec.rb
     sandbox bin/rubocop -a lib/text_sentinel.rb

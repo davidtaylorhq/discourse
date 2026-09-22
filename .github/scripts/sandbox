@@ -4,17 +4,35 @@
 # The agent is allowed to run this script and never `docker` itself, because
 # `docker run` takes arguments like `-v /:/host` and `-e SOME_TOKEN` that would
 # reach straight out of the sandbox. Every flag below is fixed here.
+#
+# Git runs in here too. The container has its own git directory, on its own
+# filesystem, and reaches the runner's repository only through the relay, so
+# nothing it writes can be executed by the runner.
 set -euo pipefail
 
 CONTAINER=discourse_sandbox
 IMAGE=discourse/discourse_dev:release
 SRC="${SANDBOX_SRC:-$PWD}"
+GITDIR=/home/discourse/gitdir
+RELAY=git://host.docker.internal/relay.git
 LOCK="${RUNNER_TEMP:-/tmp}/sandbox.lock"
 
 log() { echo "[sandbox] $*" >&2; }
 
 running() {
   [ "$(docker inspect -f '{{.State.Running}}' "$CONTAINER" 2>/dev/null || echo false)" = true ]
+}
+
+in_container() {
+  docker exec -i \
+    -u discourse \
+    -w /src \
+    -e CI=1 \
+    -e RAILS_ENV \
+    -e GIT_DIR="$GITDIR" \
+    -e GIT_WORK_TREE=/src \
+    "$CONTAINER" \
+    bash -lc "$1"
 }
 
 boot() {
@@ -24,6 +42,7 @@ boot() {
   docker run -d \
     --name "$CONTAINER" \
     --hostname discourse \
+    --add-host host.docker.internal:host-gateway \
     -v "$SRC:/src" \
     -v "$SRC/data/postgres:/shared/postgres_data" \
     "$IMAGE" /sbin/boot >/dev/null
@@ -46,6 +65,19 @@ boot() {
   "
   log "container user renumbered to $uid:$gid"
 
+  log "fetching the branch from the relay"
+  in_container "
+    set -e
+    git init -q --bare '$GITDIR'
+    git config core.bare false
+    git remote add origin '$RELAY'
+    git fetch -q --depth 1 origin '+refs/heads/${HEAD_REF}:refs/heads/${HEAD_REF}'
+    git symbolic-ref HEAD 'refs/heads/${HEAD_REF}'
+    git reset -q --mixed
+    git config user.name  'discoursebot'
+    git config user.email 'discoursebot@users.noreply.github.com'
+  "
+
   log "waiting for postgres"
   local i
   for i in $(seq 1 60); do
@@ -54,23 +86,13 @@ boot() {
   done
 
   log "installing gems"
-  run_in bundle install --jobs "$(nproc)" --retry 3
+  in_container "bundle install --jobs $(nproc) --retry 3"
   log "installing node modules"
-  run_in pnpm install --frozen-lockfile
+  in_container "pnpm install --frozen-lockfile"
   log "migrating"
-  run_in bin/rake db:create db:migrate
-  RAILS_ENV=test run_in bin/rake db:create db:migrate
+  in_container "bin/rake db:create db:migrate"
+  in_container "RAILS_ENV=test bin/rake db:create db:migrate"
   log "ready"
-}
-
-run_in() {
-  docker exec -i \
-    -u discourse \
-    -w /src \
-    -e CI=1 \
-    -e RAILS_ENV \
-    "$CONTAINER" \
-    bash -lc "$(printf '%q ' "$@")"
 }
 
 if [ "$#" -eq 0 ]; then
@@ -83,10 +105,4 @@ flock 9
 running || boot
 exec 9>&-
 
-docker exec -i \
-  -u discourse \
-  -w /src \
-  -e CI=1 \
-  -e RAILS_ENV \
-  "$CONTAINER" \
-  bash -lc "$*"
+in_container "$*"

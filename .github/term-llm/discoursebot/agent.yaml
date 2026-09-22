@@ -13,21 +13,13 @@ mcp:
 shell:
   allow:
     - "pwd"
-    - "git diff *"
-    - "git log *"
-    - "git status"
-    - "git show *"
-    - "git blame *"
-    - "git rev-parse *"
-    - "git add *"
-    - "git commit *"
-    - "git restore *"
-    # Everything that executes runs in the dev container. `docker` itself is
-    # deliberately absent: its flags would reach back out to the runner.
+    # Nothing that executes runs here. git included: with a writable git
+    # directory, `diff.external`, `textconv`, `core.fsmonitor` and a hook all
+    # turn an ordinary git command into code running on the runner.
     - "sandbox *"
   auto_run: true
   scripts:
-    pr-head-sha: "git rev-parse HEAD"
+    changes: "sandbox git status --porcelain=v1 && sandbox git diff"
 
 max_turns: 200
 handover_mode: "light"

@@ -1,0 +1,76 @@
+#!/bin/bash
+# Serve the pull request branch to the sandbox container, and forward pushes
+# the container makes on to GitHub.
+#
+# The container reaches this repository over git's protocol and never through
+# the filesystem, so it can send objects and a ref update and nothing else. The
+# repository, its config and its hooks belong to the runner, which is what makes
+# it safe to run git against here. The credential stays in this process.
+set -euo pipefail
+
+RELAY="${RUNNER_TEMP:?}/relay.git"
+STATE="${RUNNER_TEMP:?}/relay.pushed"
+
+: "${HEAD_REF:?no branch resolved for this pull request}"
+: "${HEAD_OID:?no starting commit recorded}"
+
+git --git-dir="$RELAY" config core.bare true
+git --git-dir="$RELAY" update-ref "refs/heads/$HEAD_REF" "$HEAD_OID"
+git --git-dir="$RELAY" symbolic-ref HEAD "refs/heads/$HEAD_REF"
+printf '%s' "$HEAD_OID" > "$STATE"
+touch "$RELAY/git-daemon-export-ok"
+
+# Only the branch this pull request came from may be written.
+cat > "$RELAY/hooks/update" <<HOOK
+#!/bin/sh
+if [ "\$1" != "refs/heads/$HEAD_REF" ]; then
+  echo "discoursebot: only $HEAD_REF may be pushed from the sandbox" >&2
+  exit 1
+fi
+HOOK
+
+# Git ignores what post-receive exits with, so a failed forward has to say so
+# itself or the agent is told its push succeeded when GitHub never saw it.
+cat > "$RELAY/hooks/post-receive" <<HOOK
+#!/bin/bash
+while read -r _old new ref; do
+  [ "\$ref" = "refs/heads/$HEAD_REF" ] || continue
+
+  if [ "\${CAN_PUSH:-false}" != true ]; then
+    echo "discoursebot: kept in the sandbox, not sent to GitHub: \${PUSH_BLOCKED_BECAUSE:-pushing is unavailable}"
+    continue
+  fi
+
+  expected=\$(cat "$STATE")
+  auth=\$(printf 'x-access-token:%s' "\$GH_TOKEN" | base64 -w0)
+  if git -c http.extraheader="AUTHORIZATION: basic \$auth" \\
+       push --force-with-lease="refs/heads/$HEAD_REF:\$expected" \\
+       "\${RELAY_REMOTE:-https://github.com/\$GITHUB_REPOSITORY.git}" \\
+       "\$new:refs/heads/$HEAD_REF" 2>&1
+  then
+    printf '%s' "\$new" > "$STATE"
+    echo "discoursebot: pushed \${new:0:12} to $HEAD_REF on GitHub"
+  else
+    echo "discoursebot: GitHub refused the push; the commit exists only in the sandbox"
+    echo "discoursebot: the branch most likely moved since this run started"
+  fi
+done
+HOOK
+
+chmod +x "$RELAY/hooks/update" "$RELAY/hooks/post-receive"
+
+# Listen on the docker bridge only. The update hook is the real gate, but there
+# is no reason for this to be reachable from anywhere else.
+bridge=$(ip -4 -o addr show docker0 2>/dev/null | awk '{print $4}' | cut -d/ -f1 | head -1)
+: "${bridge:=0.0.0.0}"
+
+git daemon \
+  --base-path="$(dirname "$RELAY")" \
+  --export-all \
+  --enable=receive-pack \
+  --listen="$bridge" \
+  --port=9418 \
+  --reuseaddr \
+  --detach
+
+echo "relay serving $HEAD_REF on $bridge:9418"
