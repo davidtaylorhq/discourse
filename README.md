@@ -78,6 +78,10 @@ Additionally, we aim to support Safari on iOS 16.4+.
 
 Plus *lots* of Ruby Gems, a complete list of which is at [/main/Gemfile](https://github.com/discourse/discourse/blob/main/Gemfile).
 
+## Test Section (temporary, requested for PR #310 demo)
+
+Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.
+
 ## Contributing
 
 [![Build Status](https://github.com/discourse/discourse/actions/workflows/tests.yml/badge.svg)](https://github.com/discourse/discourse/actions)
