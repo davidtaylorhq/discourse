@@ -16,6 +16,7 @@ jobs:
       contents: read
       pull-requests: write
       issues: write
+      actions: read  # to find the previous run's session artifact
 
     env:
       TERM_LLM_VERSION: v0.9.54
@@ -47,6 +48,23 @@ jobs:
           fetch-depth: 1
           path: src
           persist-credentials: false
+
+      - name: Restore the conversation for this issue
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ARTIFACT: discoursebot-session-${{ github.event.issue.number }}
+        run: |
+          mkdir -p "$RUNNER_TEMP/session"
+          run_id=$(gh api \
+            "repos/${{ github.repository }}/actions/artifacts?name=$ARTIFACT&per_page=1" \
+            --jq '.artifacts[0] | select(.expired == false) | .workflow_run.id // empty')
+          if [ -n "$run_id" ]; then
+            gh run download "$run_id" --repo ${{ github.repository }} \
+              -n "$ARTIFACT" -D "$RUNNER_TEMP/session"
+            echo "Continuing the conversation from run $run_id."
+          else
+            echo "No earlier conversation; starting fresh."
+          fi
 
       - name: Install tooling
         run: |
@@ -94,15 +112,31 @@ jobs:
             printf '%s\n' "$COMMENT_BODY"
           } > prompt.txt
 
+          session_db="$RUNNER_TEMP/session/issue-${ISSUE_NUMBER}.db"
+          resume=""
+          if [ -f "$session_db" ]; then
+            resume="--resume"
+          fi
+
           term-llm ask \
             --agent "$GITHUB_WORKSPACE/agent/.github/term-llm/discoursebot" \
             --provider claude-bin \
-            --no-session \
+            --session-db "$session_db" \
+            $resume \
             --text \
             --stats \
             --max-turns 200 \
             --timeout 15m \
             "$(cat prompt.txt)"
+
+      - name: Save the conversation
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: discoursebot-session-${{ github.event.issue.number }}
+          path: ${{ runner.temp }}/session
+          retention-days: 30
+          if-no-files-found: ignore
 
       - name: Report failure
         if: failure()
