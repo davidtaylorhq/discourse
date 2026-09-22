@@ -87,15 +87,19 @@ install -m 0755 "$(dirname "$0")/host-gate" "$STATE/gate"
 step "generating keys"
 ssh-keygen -q -t ed25519 -N '' -f "$STATE/hostkey"
 ssh-keygen -q -t ed25519 -N '' -f "$STATE/clientkey" -C discoursebot
+# The default location, with the permissions sshd insists on. An
+# AuthorizedKeysFile elsewhere is silently ignored when anything in its path is
+# not to sshd's liking, which looks exactly like a wrong key.
+mkdir -p "$HOME/.ssh"
+chmod 700 "$HOME/.ssh"
 printf 'restrict,command="%s/gate" %s\n' "$STATE" "$(cat "$STATE/clientkey.pub")" \
-  > "$STATE/authorized_keys"
-chmod 600 "$STATE/authorized_keys"
+  >> "$HOME/.ssh/authorized_keys"
+chmod 600 "$HOME/.ssh/authorized_keys"
 
 cat > "$STATE/sshd_config" <<CONF
 Port $SSH_PORT
 ListenAddress $bridge
 HostKey $STATE/hostkey
-AuthorizedKeysFile $STATE/authorized_keys
 AllowUsers $(id -un)
 PermitRootLogin no
 PasswordAuthentication no
@@ -112,6 +116,8 @@ CONF
 
 step "starting sshd"
 sudo mkdir -p /run/sshd
+sudo touch "$RUNNER_TEMP/sshd.log"
+sudo chmod 666 "$RUNNER_TEMP/sshd.log"
 if ! sudo /usr/sbin/sshd -f "$STATE/sshd_config" -E "$RUNNER_TEMP/sshd.log"; then
   echo "[host] sshd refused to start:" >&2
   sudo cat "$RUNNER_TEMP/sshd.log" >&2 || true
@@ -123,6 +129,9 @@ fi
 # The container asks for a model by name and gets whichever one this is
 # configured with; term-llm drops the requested name deliberately. Swapping to
 # another provider is a change here and nowhere else.
+step "gate is listening on:"
+ss -tln | grep ":$SSH_PORT" >&2 || echo "[host] nothing on $SSH_PORT" >&2
+
 step "installing the claude cli"
 npm install -g @anthropic-ai/claude-code >/dev/null 2>&1
 
