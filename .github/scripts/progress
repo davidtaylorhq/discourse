@@ -41,7 +41,7 @@ def render(steps):
         # round mark floating above the capitals. Centring it on the x-height
         # puts its top level with them.
         mark = (
-            f'<img src="{assets}/{name}" width="13" height="13" alt="{alt}"'
+            f'<img src="{assets}/{name}" width="15" height="15" alt="{alt}"'
             ' style="vertical-align: middle; margin-right: 2px">'
         )
         lines.append(f"{mark} {s['label']}")
