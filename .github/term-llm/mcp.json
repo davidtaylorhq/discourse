@@ -7,7 +7,7 @@
         "-p", "__SSH_PORT__",
         "-o", "StrictHostKeyChecking=no",
         "-o", "UserKnownHostsFile=/dev/null",
-        "host.docker.internal",
+        "__GATE_USER__@host.docker.internal",
         "mcp"
       ]
     }

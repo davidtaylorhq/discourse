@@ -159,7 +159,7 @@ jobs:
             printf '%s\n' "$COMMENT_BODY"
           } > "$RUNNER_TEMP/prompt.txt"
 
-          sed -e "s/__SSH_PORT__/$SSH_PORT/" \
+          sed -e "s/__SSH_PORT__/$SSH_PORT/" -e "s/__GATE_USER__/$GATE_USER/" \
             agent/.github/term-llm/mcp.json > "$RUNNER_TEMP/mcp.json"
 
           agent/.github/scripts/run-agent

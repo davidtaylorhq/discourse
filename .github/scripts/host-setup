@@ -153,6 +153,7 @@ fi
   echo "SERVE_PORT=$SERVE_PORT"
   echo "SERVE_TOKEN=$serve_token"
   echo "CLIENT_KEY=$STATE/clientkey"
+  echo "GATE_USER=$(id -un)"
 } >> "$GITHUB_ENV"
 
 echo "gate on $bridge:$SSH_PORT, inference on $bridge:$SERVE_PORT"

@@ -9,6 +9,7 @@ set -euo pipefail
 
 : "${RUNNER_TEMP:?}" "${BRIDGE_IP:?}" "${SSH_PORT:?}" "${SERVE_PORT:?}"
 : "${SERVE_TOKEN:?}" "${CLIENT_KEY:?}" "${HEAD_REF:?}" "${AGENT_DIR:?}"
+: "${GATE_USER:?}"
 : "${TERM_LLM_VERSION:?}"
 
 CONTAINER=discourse_sandbox
@@ -21,7 +22,7 @@ as_agent() {
   docker exec -i -u discourse -w /src \
     -e CI=1 \
     -e GIT_SSH_COMMAND="$SSH_CMD" \
-    "$CONTAINER" bash -lc "$1"
+    "$CONTAINER" bash -lc 'export PATH="$HOME/.local/bin:$PATH"; '"$1"
 }
 
 log "booting $IMAGE"
@@ -46,7 +47,7 @@ as_agent "curl -fsSL https://raw.githubusercontent.com/samsaffron/term-llm/${TER
 log "cloning the branch"
 as_agent "
   set -e
-  git clone -q --depth 1 --branch '$HEAD_REF' ssh://host.docker.internal/relay.git /src
+  git clone -q --depth 1 --branch '$HEAD_REF' ssh://$GATE_USER@host.docker.internal/relay.git /src
   cd /src
   git config user.name  'discoursebot'
   git config user.email 'discoursebot@users.noreply.github.com'
