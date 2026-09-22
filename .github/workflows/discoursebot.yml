@@ -42,12 +42,24 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: gh pr checkout ${{ github.event.issue.number }}
 
-      - name: Install Claude Code
-        run: npm install -g @anthropic-ai/claude-code
+      - name: Restore the conversation for this pull request
+        uses: actions/cache@v4
+        with:
+          path: ~/.term-llm/sessions
+          key: discoursebot-session-${{ github.event.issue.number }}-${{ github.run_id }}
+          restore-keys: discoursebot-session-${{ github.event.issue.number }}-
 
-      - name: Install term-llm
+      - name: Install tooling
         run: |
-          curl -fsSL https://raw.githubusercontent.com/samsaffron/term-llm/${TERM_LLM_VERSION}/install.sh | sh
+          npm install -g @anthropic-ai/claude-code &
+          claude_pid=$!
+          curl -fsSL https://raw.githubusercontent.com/samsaffron/term-llm/${TERM_LLM_VERSION}/install.sh | sh &
+          termllm_pid=$!
+          docker pull -q ghcr.io/github/github-mcp-server:v1.12.2 &
+          docker_pid=$!
+          wait $claude_pid
+          wait $termllm_pid
+          wait $docker_pid
           echo "$HOME/.local/bin" >> "$GITHUB_PATH"
 
       - name: Configure the agent
@@ -61,7 +73,6 @@ jobs:
             git show origin/${{ github.event.repository.default_branch }}:.github/term-llm/discoursebot/$f \
               > "$RUNNER_TEMP/discoursebot/$f"
           done
-          docker pull -q ghcr.io/github/github-mcp-server:v1.12.2
 
       - name: Run agent
         env:
@@ -90,11 +101,19 @@ jobs:
             printf '%s\n' "$COMMENT_BODY"
           } > prompt.txt
 
-          set -o pipefail
+          session_db="$HOME/.term-llm/sessions/issue-${ISSUE_NUMBER}.db"
+          mkdir -p "$(dirname "$session_db")"
+          resume=""
+          if [ -f "$session_db" ]; then
+            resume="--resume"
+            echo "Continuing the conversation from an earlier mention."
+          fi
+
           term-llm ask \
             --agent "$RUNNER_TEMP/discoursebot" \
             --provider claude-bin \
-            --no-session \
+            --session-db "$session_db" \
+            $resume \
             --text \
             --stats \
             --max-turns 200 \
