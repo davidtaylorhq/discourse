@@ -34,6 +34,12 @@ Here are just a few of the incredible communities using Discourse:
 👉 [Discover more communities using Discourse](https://discover.discourse.org/)
 
 
+## Test Section (temporary, added for a bot editing demo)
+
+Why do programmers prefer dark mode? Because light attracts bugs. 🐛
+
+Fun Discourse fact: the forum you're using to read this was, at some point, almost certainly rendered by Ember, backed by Rails, and stored in Postgres — three technologies that get along far better than three cats in a box.
+
 ## Development
 
 To get your environment set up, follow one of the setup guides:
