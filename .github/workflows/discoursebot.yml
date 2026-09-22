@@ -36,6 +36,8 @@ jobs:
       # alone: the first time the bot ran here it found five hours of comments
       # unclaimed and took on thirty-nine instructions in a single turn.
       MAX_COMMENT_AGE_HOURS: 1
+      # The spinner is served from the same commit the rest of this came from.
+      ASSET_REF: ${{ github.sha }}
 
     steps:
       - name: Check out the agent

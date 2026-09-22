@@ -10,13 +10,33 @@ import pathlib
 import subprocess
 import sys
 
-MARK = {"done": "✅", "active": "⏳", "pending": "⬜"}
+# Not a task list: anyone reading can tick those, and this would then spend the
+# run arguing with them. The unfinished mark is a plain circle rather than an
+# emoji square, so it takes the colour of whatever theme is reading it instead
+# of being a pale block on a dark page.
+DONE = "✅"
+PENDING = "○"
+SPINNER = (
+    '<img src="https://raw.githubusercontent.com/{repo}/{ref}/.github/assets/spinner.gif"'
+    ' width="13" height="13" alt="in progress">'
+)
 STATE = pathlib.Path(os.environ.get("PROGRESS_FILE", "/tmp/progress.json"))
 WINDOW = os.environ.get("FOLLOWUP_WINDOW", "60")
 
 
 def render(steps):
-    lines = [f"{MARK[s['state']]} {s['label']}" for s in steps]
+    spinner = SPINNER.format(
+        repo=os.environ.get("GITHUB_REPOSITORY", ""),
+        ref=os.environ.get("ASSET_REF", "main"),
+    )
+    lines = []
+    for s in steps:
+        if s["state"] == "done":
+            lines.append(f"{DONE} {s['label']}")
+        elif s["state"] == "active":
+            lines.append(f"{spinner} {s['label']}")
+        else:
+            lines.append(f"{PENDING} {s['label']}")
     run = os.environ.get("RUN_URL", "")
     body = "\n".join(lines)
     return f"{body}\n\n<sub>[Run log]({run})</sub>" if run else body
