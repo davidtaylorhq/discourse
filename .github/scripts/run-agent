@@ -110,14 +110,6 @@ printf '%s\n' \
 docker cp "$RUNNER_TEMP/config.yaml" "$CONTAINER:$HOME_DIR/.config/term-llm/config.yaml"
 docker exec -u root "$CONTAINER" chown -R agent:agent "$HOME_DIR/.config"
 
-resume=""
-if [ -f "$RUNNER_TEMP/session/issue.db" ]; then
-  log "restoring the earlier conversation"
-  docker cp "$RUNNER_TEMP/session/issue.db" "$CONTAINER:$HOME_DIR/session.db"
-  docker exec -u root "$CONTAINER" chown agent:agent "$HOME_DIR/session.db"
-  resume="--resume"
-fi
-
 log "running the agent"
 docker cp "$RUNNER_TEMP/prompt.txt" "$CONTAINER:$HOME_DIR/prompt.txt"
 set +e
@@ -125,8 +117,7 @@ as_agent "
   term-llm ask \
     --agent discoursebot \
     --provider anthropic \
-    --session-db $HOME_DIR/session.db \
-    $resume \
+    --no-session \
     --yolo \
     --text \
     --stats \
@@ -137,8 +128,6 @@ as_agent "
 status=${PIPESTATUS[0]}
 set -e
 
-mkdir -p "$RUNNER_TEMP/session"
-docker cp "$CONTAINER:$HOME_DIR/session.db"     "$RUNNER_TEMP/session/issue.db" 2>/dev/null || true
 docker cp "$CONTAINER:$HOME_DIR/finish.json"    "$RUNNER_TEMP/finish.json"      2>/dev/null || true
 docker cp "$CONTAINER:$HOME_DIR/findings.jsonl" "$RUNNER_TEMP/findings.jsonl"   2>/dev/null || true
 

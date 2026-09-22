@@ -19,7 +19,6 @@ jobs:
       contents: write  # the relay forwards the agent's commits; its hooks gate the branch
       pull-requests: write
       issues: write
-      actions: read  # to find the previous run's session artifact
 
     env:
       TERM_LLM_VERSION: v0.9.54
@@ -47,15 +46,6 @@ jobs:
           echo "id=$id" >> "$GITHUB_OUTPUT"
           COMMENT_ID="$id" PROGRESS_FILE="$RUNNER_TEMP/progress.json" \
             agent/.github/scripts/progress init
-
-      - name: Identify this agent
-        id: agent
-        run: |
-          # A conversation recorded against one set of tools cannot be resumed
-          # against another, so what the agent is forms part of its identity.
-          hash=$(find agent/.github/term-llm agent/.github/scripts -type f -exec sha256sum {} + \
-            | sort | sha256sum | cut -c1-12)
-          echo "hash=$hash" >> "$GITHUB_OUTPUT"
 
       - name: Resolve the pull request
         id: pr
@@ -122,23 +112,6 @@ jobs:
           export PATH="$HOME/.local/bin:$PATH"
           agent/.github/scripts/host-setup
 
-      - name: Restore the conversation for this issue
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          ARTIFACT: discoursebot-session-${{ github.event.issue.number }}-${{ steps.agent.outputs.hash }}
-        run: |
-          mkdir -p "$RUNNER_TEMP/session"
-          run_id=$(gh api \
-            "repos/${{ github.repository }}/actions/artifacts?name=$ARTIFACT&per_page=1" \
-            --jq '.artifacts[0] | select(.expired == false) | .workflow_run.id // empty')
-          if [ -n "$run_id" ]; then
-            gh run download "$run_id" --repo ${{ github.repository }} \
-              -n "$ARTIFACT" -D "$RUNNER_TEMP/session"
-            echo "Continuing the conversation from run $run_id."
-          else
-            echo "No earlier conversation; starting fresh."
-          fi
-
       - name: Run the agent
         env:
           COMMENT_BODY: ${{ github.event.comment.body }}
@@ -194,15 +167,6 @@ jobs:
         run: |
           agent/.github/scripts/post-review
           agent/.github/scripts/progress set responded done
-
-      - name: Save the conversation
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: discoursebot-session-${{ github.event.issue.number }}-${{ steps.agent.outputs.hash }}
-          path: ${{ runner.temp }}/session
-          retention-days: 30
-          if-no-files-found: ignore
 
       - name: Report failure
         if: failure()
