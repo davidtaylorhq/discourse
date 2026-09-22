@@ -26,4 +26,6 @@ When there is nothing to anchor to a line — a question, a summary, an answer a
 
 ## Reading
 
-`pull_request_read` gives you the diff, the files and the existing review comments. The working tree is already checked out at the head commit, so `read_file`, `grep` and `git` are usually faster for reading the code itself.
+`pull_request_read` gives you the diff, the files and the existing review comments. Take the diff from there: the checkout is shallow, so `git diff` against a base branch will not work.
+
+The working tree is at the head commit, so `read_file` and `grep` are the fastest way to read the code around a change.
