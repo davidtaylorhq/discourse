@@ -6,7 +6,7 @@ set -euo pipefail
 step() { echo "[host] $*" >&2; }
 
 : "${RUNNER_TEMP:?}" "${HEAD_REF:?}" "${HEAD_OID:?}" "${GITHUB_REPOSITORY:?}"
-: "${GH_TOKEN:?}" "${CLAUDE_CODE_OAUTH_TOKEN:?}"
+: "${GH_TOKEN:?}"
 
 STATE="$HOME/.discoursebot"
 RELAY="$RUNNER_TEMP/relay.git"
@@ -144,16 +144,6 @@ if ! sudo /usr/sbin/sshd -f "$STATE/sshd_config" -E "$RUNNER_TEMP/sshd.log"; the
   exit 1
 fi
 
-# ------------------------------------------------------------------ inference
-# The container asks for a model by name and gets whichever one this is
-# configured with; term-llm drops the requested name deliberately. Swapping to
-# another provider is a change here and nowhere else.
-step "home permissions: $(stat -c '%A %U:%G' "$HOME") / $(stat -c '%A %U:%G' "$HOME/.ssh")"
-step "effective config:"
-sudo /usr/sbin/sshd -T -f "$STATE/sshd_config" 2>&1 \
-  | grep -iE '^(authorizedkeysfile|allowusers|pubkeyauth|strictmodes|port|listenaddress|loglevel)' >&2 || true
-step "authorized key: $(ssh-keygen -lf "$STATE/clientkey.pub" 2>&1)"
-step "authorized_keys has $(wc -l < "$HOME/.ssh/authorized_keys") line(s), options: $(cut -d' ' -f1 "$HOME/.ssh/authorized_keys" | tail -1)"
 step "gate is listening on:"
 ss -tln | grep ":$SSH_PORT" >&2 || echo "[host] nothing on $SSH_PORT" >&2
 
