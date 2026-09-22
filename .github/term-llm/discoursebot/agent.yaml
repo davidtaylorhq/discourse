@@ -1,8 +1,11 @@
 name: discoursebot
 description: "Answers GitHub comments, reviews code, and authors changes"
 time_grounding: true
-agents_md: "true"
-skills: "all"
+# Both of these read from the tree being reviewed. A skill there registers a
+# script as a tool that runs on the runner, and an AGENTS.md there rewrites the
+# instructions of the agent reviewing it.
+agents_md: "false"
+skills: "none"
 
 tools:
   enabled: [read_file, glob, grep, write_file, edit_file, shell]
