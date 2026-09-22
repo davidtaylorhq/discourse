@@ -3,7 +3,7 @@
     "github": {
       "command": "ssh",
       "args": [
-        "-i", "/home/discourse/.ssh/gate",
+        "-i", "__KEY__",
         "-p", "__SSH_PORT__",
         "-o", "StrictHostKeyChecking=no",
         "-o", "UserKnownHostsFile=/dev/null",

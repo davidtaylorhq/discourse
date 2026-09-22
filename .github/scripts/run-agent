@@ -10,6 +10,7 @@ set -Eeuo pipefail
 : "${RUNNER_TEMP:?}" "${BRIDGE_IP:?}" "${SSH_PORT:?}" "${SERVE_PORT:?}"
 : "${SERVE_TOKEN:?}" "${CLIENT_KEY:?}" "${HEAD_REF:?}" "${AGENT_DIR:?}"
 : "${GATE_USER:?}" "${SKILLS_DIR:?}" "${TERM_LLM_VERSION:?}" "${WORKTREE_VOLUME:?}"
+: "${MCP_TEMPLATE:?}"
 
 CONTAINER=discourse_sandbox
 IMAGE=debian:stable-slim
@@ -91,6 +92,10 @@ docker exec -u root "$CONTAINER" install -d -o agent -g agent \
   "$HOME_DIR/.config/term-llm/agents" "$HOME_DIR/.config/term-llm/skills"
 docker cp "$AGENT_DIR/." "$CONTAINER:$HOME_DIR/.config/term-llm/agents/discoursebot"
 docker cp "$SKILLS_DIR/." "$CONTAINER:$HOME_DIR/.config/term-llm/skills"
+sed -e "s#__KEY__#$HOME_DIR/.ssh/gate#" \
+    -e "s#__SSH_PORT__#$SSH_PORT#" \
+    -e "s#__GATE_USER__#$GATE_USER#" \
+    "$MCP_TEMPLATE" > "$RUNNER_TEMP/mcp.json"
 docker cp "$RUNNER_TEMP/mcp.json" "$CONTAINER:$HOME_DIR/.config/term-llm/mcp.json"
 
 # Inference goes back to the runner. The model named here is ignored by the far
