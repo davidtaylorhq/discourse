@@ -100,7 +100,6 @@ jobs:
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
           GITHUB_TOOLSETS: pull_requests,issues
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.ANTHROPIC_OAUTH_TOKEN }}
         run: |
           # The checkout exists only to seed the relay; the runner keeps no work
           # tree. Everything the sandbox can reach is stood up here, and every
@@ -125,6 +124,7 @@ jobs:
           AGENT_DIR: ${{ github.workspace }}/agent/.github/term-llm/discoursebot
           SKILLS_DIR: ${{ github.workspace }}/agent/.github/term-llm/skills
           MCP_TEMPLATE: ${{ github.workspace }}/agent/.github/term-llm/mcp.json
+          CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.ANTHROPIC_OAUTH_TOKEN }}
           COMMENT_ID: ${{ steps.ack.outputs.id }}
           PROGRESS_FILE: ${{ runner.temp }}/progress.json
           GITHUB_REPOSITORY: ${{ github.repository }}
