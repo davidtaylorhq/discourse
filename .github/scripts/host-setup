@@ -39,9 +39,36 @@ git --git-dir="$RELAY" update-ref "refs/heads/$HEAD_REF" "$HEAD_OID"
 git --git-dir="$RELAY" symbolic-ref HEAD "refs/heads/$HEAD_REF"
 printf '%s' "$HEAD_OID" > "$PUSHED"
 
-cat > "$RELAY/hooks/update" <<HOOK
-#!/bin/sh
-if [ "\$1" != "refs/heads/$HEAD_REF" ]; then
+# A branch name may hold a backtick, a dollar or a quote, and everything here
+# is read by a shell on the runner. The shell does the quoting; nothing is
+# pasted into a script, and the hooks read the name rather than carrying it.
+step "writing the gate environment"
+: > "$STATE/env"
+chmod 600 "$STATE/env"
+put() { printf 'export %s=%q\n' "$1" "$2" >> "$STATE/env"; }
+put RELAY "$RELAY"
+put PUSHED "$PUSHED"
+put HEAD_REF "$HEAD_REF"
+put MCP_IMAGE "$MCP_IMAGE"
+put GITHUB_PERSONAL_ACCESS_TOKEN "$GH_TOKEN"
+put GH_TOKEN "$GH_TOKEN"
+put GITHUB_TOOLSETS "${GITHUB_TOOLSETS:-pull_requests,issues}"
+put GITHUB_READ_ONLY 1
+put WORKTREE_VOLUME "$WORKTREE_VOLUME"
+put POSTGRES_VOLUME "$POSTGRES_VOLUME"
+put PROGRESS "$STATE/progress"
+put PROGRESS_FILE "$RUNNER_TEMP/progress.json"
+put COMMENT_ID "${COMMENT_ID:-}"
+put GITHUB_REPOSITORY "$GITHUB_REPOSITORY"
+put RUN_URL "${RUN_URL:-}"
+put RUNNER_TEMP "$RUNNER_TEMP"
+put CAN_PUSH "${CAN_PUSH:-false}"
+put PUSH_BLOCKED_BECAUSE "${PUSH_BLOCKED_BECAUSE:-}"
+
+cat > "$RELAY/hooks/update" <<'HOOK'
+#!/bin/bash
+. "$HOME/.discoursebot/env"
+if [ "$1" != "refs/heads/$HEAD_REF" ]; then
   echo "discoursebot: only $HEAD_REF may be pushed from the sandbox" >&2
   exit 1
 fi
@@ -49,26 +76,26 @@ HOOK
 
 # Git ignores what post-receive exits with, so a failed forward has to say so
 # itself or the agent is told its push succeeded when GitHub never saw it.
-cat > "$RELAY/hooks/post-receive" <<HOOK
+cat > "$RELAY/hooks/post-receive" <<'HOOK'
 #!/bin/bash
-. "$STATE/env"
+. "$HOME/.discoursebot/env"
 while read -r _old new ref; do
-  [ "\$ref" = "refs/heads/$HEAD_REF" ] || continue
+  [ "$ref" = "refs/heads/$HEAD_REF" ] || continue
 
-  if [ "\${CAN_PUSH:-false}" != true ]; then
-    echo "discoursebot: kept in the sandbox, not sent to GitHub: \${PUSH_BLOCKED_BECAUSE:-pushing is unavailable}"
+  if [ "${CAN_PUSH:-false}" != true ]; then
+    echo "discoursebot: kept in the sandbox, not sent to GitHub: ${PUSH_BLOCKED_BECAUSE:-pushing is unavailable}"
     continue
   fi
 
-  expected=\$(cat "$PUSHED")
-  auth=\$(printf 'x-access-token:%s' "\$GH_TOKEN" | base64 -w0)
-  if git -c http.extraheader="AUTHORIZATION: basic \$auth" \\
-       push --force-with-lease="refs/heads/$HEAD_REF:\$expected" \\
-       "\${RELAY_REMOTE:-https://github.com/$GITHUB_REPOSITORY.git}" \\
-       "\$new:refs/heads/$HEAD_REF" 2>&1
+  expected=$(cat "$PUSHED")
+  auth=$(printf 'x-access-token:%s' "$GH_TOKEN" | base64 -w0)
+  if git -c http.extraheader="AUTHORIZATION: basic $auth" \
+       push --force-with-lease="refs/heads/$HEAD_REF:$expected" \
+       "${RELAY_REMOTE:-https://github.com/$GITHUB_REPOSITORY.git}" \
+       "$new:refs/heads/$HEAD_REF" 2>&1
   then
-    printf '%s' "\$new" > "$PUSHED"
-    echo "discoursebot: pushed \${new:0:12} to $HEAD_REF on GitHub"
+    printf '%s' "$new" > "$PUSHED"
+    echo "discoursebot: pushed ${new:0:12} to $HEAD_REF on GitHub"
   else
     echo "discoursebot: GitHub refused the push; the commit exists only in the sandbox"
     echo "discoursebot: the branch most likely moved since this run started"
@@ -77,27 +104,6 @@ done
 HOOK
 chmod +x "$RELAY/hooks/update" "$RELAY/hooks/post-receive"
 
-# ------------------------------------------------------- what the gate needs
-step "writing the gate environment"
-cat > "$STATE/env" <<ENV
-export RELAY='$RELAY'
-export MCP_IMAGE='$MCP_IMAGE'
-export GITHUB_PERSONAL_ACCESS_TOKEN='$GH_TOKEN'
-export GH_TOKEN='$GH_TOKEN'
-export GITHUB_TOOLSETS='${GITHUB_TOOLSETS:-pull_requests,issues}'
-export GITHUB_READ_ONLY=1
-export WORKTREE_VOLUME='$WORKTREE_VOLUME'
-export POSTGRES_VOLUME='$POSTGRES_VOLUME'
-export PROGRESS='$STATE/progress'
-export PROGRESS_FILE='$RUNNER_TEMP/progress.json'
-export COMMENT_ID='${COMMENT_ID:-}'
-export GITHUB_REPOSITORY='$GITHUB_REPOSITORY'
-export RUN_URL='${RUN_URL:-}'
-export RUNNER_TEMP='$RUNNER_TEMP'
-export CAN_PUSH='${CAN_PUSH:-false}'
-export PUSH_BLOCKED_BECAUSE='${PUSH_BLOCKED_BECAUSE:-}'
-ENV
-chmod 600 "$STATE/env"
 install -m 0755 "$(dirname "$0")/host-gate"  "$STATE/gate"
 install -m 0755 "$(dirname "$0")/dev-up"     "$STATE/dev-up"
 install -m 0755 "$(dirname "$0")/progress"   "$STATE/progress"
