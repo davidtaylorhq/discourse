@@ -16,7 +16,6 @@ jobs:
       contents: read
       pull-requests: write
       issues: write
-      actions: write  # required to write the session cache
 
     env:
       TERM_LLM_VERSION: v0.9.54
@@ -48,13 +47,6 @@ jobs:
           fetch-depth: 1
           path: src
           persist-credentials: false
-
-      - name: Restore the conversation for this pull request
-        uses: actions/cache@v4
-        with:
-          path: ~/.term-llm/sessions
-          key: discoursebot-session-${{ github.event.issue.number }}-${{ github.run_id }}
-          restore-keys: discoursebot-session-${{ github.event.issue.number }}-
 
       - name: Install tooling
         run: |
@@ -102,19 +94,10 @@ jobs:
             printf '%s\n' "$COMMENT_BODY"
           } > prompt.txt
 
-          session_db="$HOME/.term-llm/sessions/issue-${ISSUE_NUMBER}.db"
-          mkdir -p "$(dirname "$session_db")"
-          resume=""
-          if [ -f "$session_db" ]; then
-            resume="--resume"
-            echo "Continuing the conversation from an earlier mention."
-          fi
-
           term-llm ask \
             --agent "$GITHUB_WORKSPACE/agent/.github/term-llm/discoursebot" \
             --provider claude-bin \
-            --session-db "$session_db" \
-            $resume \
+            --no-session \
             --text \
             --stats \
             --max-turns 200 \

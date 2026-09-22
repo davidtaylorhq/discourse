@@ -24,6 +24,10 @@ Only comment on lines the pull request touches. GitHub rejects comments on uncha
 
 When there is nothing to anchor to a line — a question, a summary, an answer about an issue — post an ordinary comment instead of a review.
 
+## Earlier turns
+
+Each run starts with no memory of the last one. The thread is the memory: read the existing comments and review comments before answering, so a follow-up question lands in the context of what was already said, and you do not repeat a point you have already made.
+
 ## Reading
 
 `pull_request_read` gives you the diff, the files and the existing review comments. Take the diff from there: the checkout is shallow, so `git diff` against a base branch will not work.
