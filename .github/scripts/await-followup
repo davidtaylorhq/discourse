@@ -19,7 +19,7 @@ ALLOWED = {"OWNER", "MEMBER", "COLLABORATOR"}
 MACRO = "@discoursebot"
 
 
-CLAIM = "rocket"
+CLAIM = "eyes"
 
 
 def gh(args, quiet=False):
@@ -65,8 +65,10 @@ def candidates(repo, issue, after):
 def claim(repo, comment_id):
     """Take this one on, where the run it triggered can see that we have.
 
-    One call that either works or says why. Editing a comment to leave a note
-    was two calls, and the failure of the second was invisible.
+    Runs on an issue are serialised, so the run this comment started cannot
+    begin until this one ends and will see the reaction when it does. One call
+    that either works or says why: leaving a note in a comment took two, and
+    the failure of the second went unnoticed.
     """
     p = subprocess.run(
         ["gh", "api", "--method", "POST",
