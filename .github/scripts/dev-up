@@ -18,7 +18,9 @@ exec 9>"${RUNNER_TEMP:-/tmp}/dev-up.lock"
 flock 9
 running && exit 0
 
-"$PROGRESS" insert-before responded \
+# Before the agent's own line, not after it: the agent cannot finish until the
+# environment it asked for is up, so a tick below a spinner reads as backwards.
+"$PROGRESS" insert-before agent \
   dev_req="Requested development environment" \
   dev_ready="Development environment ready" || true
 "$PROGRESS" set dev_req done || true
