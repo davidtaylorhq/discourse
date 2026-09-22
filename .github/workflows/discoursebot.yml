@@ -81,8 +81,13 @@ jobs:
 
       - name: Configure the agent
         run: |
-          mkdir -p "$HOME/.config/term-llm"
+          mkdir -p "$HOME/.config/term-llm/agents"
           cp agent/.github/term-llm/mcp.json "$HOME/.config/term-llm/mcp.json"
+          cp -r agent/.github/term-llm/discoursebot "$HOME/.config/term-llm/agents/"
+
+          # Agents in the working directory outrank installed ones, so a pull
+          # request carrying this path would otherwise choose its own reviewer.
+          rm -rf src/term-llm-agents
 
       - name: Run agent
         env:
@@ -119,7 +124,7 @@ jobs:
           fi
 
           term-llm ask \
-            --agent "$GITHUB_WORKSPACE/agent/.github/term-llm/discoursebot" \
+            --agent discoursebot \
             --provider claude-bin \
             --session-db "$session_db" \
             $resume \
