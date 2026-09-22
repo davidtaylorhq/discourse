@@ -128,7 +128,7 @@ as_agent "
   term-llm ask \
     --agent discoursebot \
     --provider claude-bin \
-    --no-session \
+    --session-db $HOME_DIR/session.db \
     --yolo \
     --text \
     --stats \

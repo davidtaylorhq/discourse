@@ -51,6 +51,7 @@ def main(argv):
             ("sandbox", "Preparing the sandbox", "active"),
             ("working", "Working", "pending"),
             ("replying", "Replying", "pending"),
+            ("waiting", "Waiting for anything further", "pending"),
         )]
         publish(steps)
         return 0
