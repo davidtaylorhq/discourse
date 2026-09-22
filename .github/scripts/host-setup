@@ -108,6 +108,10 @@ PubkeyAuthentication yes
 UsePAM no
 PrintMotd no
 LogLevel VERBOSE
+# The runner's home is group-writable, which sshd treats as reason enough to
+# ignore an authorized_keys file without saying so. This box is ephemeral and
+# the key is the only way in, so the check buys nothing here.
+StrictModes no
 X11Forwarding no
 AllowTcpForwarding no
 AllowAgentForwarding no
@@ -129,6 +133,7 @@ fi
 # The container asks for a model by name and gets whichever one this is
 # configured with; term-llm drops the requested name deliberately. Swapping to
 # another provider is a change here and nowhere else.
+step "home permissions: $(stat -c '%A %U:%G' "$HOME") / $(stat -c '%A %U:%G' "$HOME/.ssh")"
 step "gate is listening on:"
 ss -tln | grep ":$SSH_PORT" >&2 || echo "[host] nothing on $SSH_PORT" >&2
 

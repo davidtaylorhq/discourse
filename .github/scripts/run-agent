@@ -23,6 +23,8 @@ log() { echo "[sandbox] $*" >&2; }
 dump_host_log() {
   echo "[sandbox] --- sshd log ---" >&2
   sudo cat "$RUNNER_TEMP/sshd.log" 2>/dev/null >&2 || true
+  echo "[sandbox] --- auth log ---" >&2
+  sudo tail -30 /var/log/auth.log 2>/dev/null >&2 || true
 }
 trap dump_host_log ERR
 
