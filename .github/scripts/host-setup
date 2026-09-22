@@ -19,6 +19,12 @@ POSTGRES_VOLUME=discoursebot-postgres
 step "preparing $STATE"
 docker volume create "$WORKTREE_VOLUME" >/dev/null
 docker volume create "$POSTGRES_VOLUME" >/dev/null
+
+# The gate starts this image the first time the agent reads anything from
+# GitHub, and waited on the pull when it did. Fetch it now instead, while the
+# sandbox is being built. A second pull of an image already arriving waits on
+# the first rather than repeating it.
+nohup docker pull -q "$MCP_IMAGE" > "$RUNNER_TEMP/mcp-pull.log" 2>&1 &
 mkdir -p "$STATE"
 chmod 700 "$STATE"
 
