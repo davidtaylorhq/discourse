@@ -3,6 +3,8 @@
 # in front of it, and an inference endpoint. Every credential stays here.
 set -euo pipefail
 
+step() { echo "[host] $*" >&2; }
+
 : "${RUNNER_TEMP:?}" "${HEAD_REF:?}" "${HEAD_OID:?}" "${GITHUB_REPOSITORY:?}"
 : "${GH_TOKEN:?}" "${CLAUDE_CODE_OAUTH_TOKEN:?}"
 
@@ -13,12 +15,15 @@ SSH_PORT=2222
 SERVE_PORT=8088
 MCP_IMAGE=ghcr.io/github/github-mcp-server:v1.12.2
 
+step "preparing $STATE"
 mkdir -p "$STATE"
 chmod 700 "$STATE"
 
+step "finding the docker bridge"
 bridge=$(ip -4 -o addr show docker0 2>/dev/null | awk '{print $4}' | cut -d/ -f1 | head -1)
 : "${bridge:=172.17.0.1}"
 
+step "building the relay on $bridge"
 # ---------------------------------------------------------------- git relay
 git --git-dir="$RELAY" config core.bare true
 git --git-dir="$RELAY" update-ref "refs/heads/$HEAD_REF" "$HEAD_OID"
@@ -64,6 +69,7 @@ HOOK
 chmod +x "$RELAY/hooks/update" "$RELAY/hooks/post-receive"
 
 # ------------------------------------------------------- what the gate needs
+step "writing the gate environment"
 serve_token=$(openssl rand -hex 32)
 cat > "$STATE/env" <<ENV
 export RELAY='$RELAY'
@@ -78,6 +84,7 @@ chmod 600 "$STATE/env"
 install -m 0755 "$(dirname "$0")/host-gate" "$STATE/gate"
 
 # --------------------------------------------------------------- the ssh gate
+step "generating keys"
 ssh-keygen -q -t ed25519 -N '' -f "$STATE/hostkey"
 ssh-keygen -q -t ed25519 -N '' -f "$STATE/clientkey" -C discoursebot
 printf 'restrict,command="%s/gate" %s\n' "$STATE" "$(cat "$STATE/clientkey.pub")" \
@@ -102,12 +109,19 @@ AllowAgentForwarding no
 Subsystem sftp /bin/false
 CONF
 
-sudo /usr/sbin/sshd -f "$STATE/sshd_config" -E "$RUNNER_TEMP/sshd.log"
+step "starting sshd"
+if ! sudo /usr/sbin/sshd -f "$STATE/sshd_config" -E "$RUNNER_TEMP/sshd.log"; then
+  echo "[host] sshd refused to start:" >&2
+  sudo cat "$RUNNER_TEMP/sshd.log" >&2 || true
+  sudo /usr/sbin/sshd -T -f "$STATE/sshd_config" >&2 || true
+  exit 1
+fi
 
 # ------------------------------------------------------------------ inference
 # The container asks for a model by name and gets whichever one this is
 # configured with; term-llm drops the requested name deliberately. Swapping to
 # another provider is a change here and nowhere else.
+step "installing the claude cli"
 npm install -g @anthropic-ai/claude-code >/dev/null 2>&1
 
 TERM_LLM_SERVE_TOKEN="$serve_token" \
@@ -117,10 +131,20 @@ TERM_LLM_SERVE_TOKEN="$serve_token" \
     --port "$SERVE_PORT" \
     > "$RUNNER_TEMP/serve.log" 2>&1 &
 
+step "waiting for inference on $bridge:$SERVE_PORT"
+ready=false
 for _ in $(seq 1 60); do
-  curl -fsS -o /dev/null "http://$bridge:$SERVE_PORT/ui/healthz" 2>/dev/null && break
+  if curl -fsS -o /dev/null "http://$bridge:$SERVE_PORT/ui/healthz" 2>/dev/null; then
+    ready=true
+    break
+  fi
   sleep 1
 done
+if [ "$ready" != true ]; then
+  echo "[host] term-llm serve never came up:" >&2
+  cat "$RUNNER_TEMP/serve.log" >&2 || true
+  exit 1
+fi
 
 {
   echo "BRIDGE_IP=$bridge"

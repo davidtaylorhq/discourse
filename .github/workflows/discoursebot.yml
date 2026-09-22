@@ -25,17 +25,17 @@ jobs:
       TERM_LLM_VERSION: v0.9.54
 
     steps:
-      - name: Add reaction to comment
+      - name: Say we are on it
+        id: ack
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         run: |
-          gh api \
-            --method POST \
-            /repos/${{ github.repository }}/issues/comments/${{ github.event.comment.id }}/reactions \
-            -f content='eyes'
+          id=$(gh api --method POST \
+            "/repos/${{ github.repository }}/issues/${{ github.event.issue.number }}/comments" \
+            -f body="On it — [watch the log]($RUN_URL)." --jq .id)
+          echo "id=$id" >> "$GITHUB_OUTPUT"
 
-      # The agent's configuration comes from the default branch: a pull request
-      # must not be able to rewrite the rules it is reviewed under.
       - name: Check out the agent
         uses: actions/checkout@v7
         with:
@@ -177,7 +177,8 @@ jobs:
         if: failure()
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         run: |
-          gh issue comment ${{ github.event.issue.number }} \
-            --repo ${{ github.repository }} \
-            --body "The run failed. [View logs](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})"
+          gh api --method PATCH \
+            "/repos/${{ github.repository }}/issues/comments/${{ steps.ack.outputs.id }}" \
+            -f body="The run failed. [View the log]($RUN_URL)." >/dev/null
