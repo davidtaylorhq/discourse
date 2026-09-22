@@ -119,8 +119,7 @@ tail -n +1 -F "$RUNNER_TEMP/dev-up.log" 2>/dev/null &
 tail_pid=$!
 trap 'kill "$tail_pid" 2>/dev/null || true' EXIT
 
-progress complete
-progress set working active
+progress next
 log "running the agent"
 docker cp "$RUNNER_TEMP/prompt.txt" "$CONTAINER:$HOME_DIR/prompt.txt"
 set +e

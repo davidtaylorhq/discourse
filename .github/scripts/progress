@@ -1,8 +1,16 @@
 #!/usr/bin/env python3
 """Keep the run's opening comment up to date as a checklist.
 
-The steps are not fixed: booting a development environment adds its own, so the
-comment says what this run actually did rather than what a run might do.
+The list is a sequence with one step in progress at a time, so the position is
+a number and everything before it is finished. Steps have no names and nothing
+addresses them: a caller says to move on, and may hand over steps to do first.
+
+    progress start LABEL...     the list, with the first step under way
+    progress next [LABEL...]    finish this step, do these next, start the next
+    progress done               finish this step; nothing follows
+
+Moving on is one call and one edit, so the comment never shows a moment with
+nothing happening.
 """
 import json
 import os
@@ -10,126 +18,69 @@ import pathlib
 import subprocess
 import sys
 
-# Not a task list: anyone reading can tick those, and this would then spend the
-# run arguing with them. The unfinished mark is a plain circle rather than an
-# emoji square, so it takes the colour of whatever theme is reading it instead
-# of being a pale block on a dark page.
-# One drawing in three states: the same ring throughout, with a gap that turns
-# while something is happening and a check once it is done. Greens and oranges
-# that hold up on either background, so one file each rather than a pair.
 OPENING = "On it!"
 FOLLOW = "Follow along with [the logs]({run})."
 ASSETS = "https://raw.githubusercontent.com/{repo}/{ref}/.github/assets"
-MARK = {
-    "done": ("mark-done.svg", "done"),
-    "active": ("mark-active.svg", "in progress"),
-    "pending": ("mark-pending.svg", "not started"),
-}
+MARK = {"done": ("mark-done.svg", "done"),
+        "active": ("mark-active.svg", "in progress"),
+        "pending": ("mark-pending.svg", "not started")}
+
 STATE = pathlib.Path(os.environ.get("PROGRESS_FILE", "/tmp/progress.json"))
-WINDOW = os.environ.get("FOLLOWUP_WINDOW", "60")
 
 
-def render(steps):
-    assets = ASSETS.format(
-        repo=os.environ.get("GITHUB_REPOSITORY", ""),
-        ref=os.environ.get("ASSET_REF", "main"),
-    )
+def render(labels, at):
+    assets = ASSETS.format(repo=os.environ.get("GITHUB_REPOSITORY", ""),
+                           ref=os.environ.get("ASSET_REF", "main"))
     lines = []
-    for s in steps:
-        name, alt = MARK[s["state"]]
+    for i, label in enumerate(labels):
+        state = "done" if i < at else "active" if i == at else "pending"
+        name, alt = MARK[state]
         # An image sits its bottom on the baseline by default, which leaves a
-        # round mark floating above the capitals. Centring it on the x-height
-        # puts its top level with them.
-        mark = (
+        # round mark floating above the capitals.
+        lines.append(
             f'<img src="{assets}/{name}" width="15" height="15" alt="{alt}"'
             ' style="vertical-align: middle; margin-right: 2px">'
-        )
-        lines.append(f"{mark} {s['label']}")
+            f" {label}")
+
     run = os.environ.get("RUN_URL", "")
     opening = f"{OPENING} {FOLLOW.format(run=run)}" if run else OPENING
     return f"{opening}\n\n" + "\n".join(lines)
 
 
-def publish(steps):
-    STATE.write_text(json.dumps(steps))
+def publish(labels, at):
+    STATE.write_text(json.dumps({"labels": labels, "at": at}))
     comment = os.environ.get("COMMENT_ID")
     repo = os.environ.get("GITHUB_REPOSITORY")
     if not comment or not repo:
         return
-    subprocess.run(
-        ["gh", "api", "--method", "PATCH",
-         f"/repos/{repo}/issues/comments/{comment}",
-         "-f", f"body={render(steps)}"],
-        input="", capture_output=True, text=True,
-    )
-
-
-def load():
-    return json.loads(STATE.read_text()) if STATE.exists() else []
+    p = subprocess.run(
+        ["gh", "api", "--method", "PATCH", f"/repos/{repo}/issues/comments/{comment}",
+         "-f", f"body={render(labels, at)}"],
+        input="", capture_output=True, text=True)
+    if p.returncode != 0:
+        print(p.stderr.strip(), file=sys.stderr)
 
 
 def main(argv):
     if not argv:
-        print("usage: progress init|set|complete|append|insert-before ...", file=sys.stderr)
+        print(__doc__.strip().splitlines()[-4], file=sys.stderr)
         return 64
+    cmd, *labels = argv
 
-    cmd, *rest = argv
-
-    if cmd == "init":
-        steps = [{"key": k, "label": l, "state": s} for k, l, s in (
-            ("sandbox", "Preparing the sandbox", "active"),
-            ("working", "Working", "pending"),
-            ("replying", "Replying", "pending"),
-            ("waiting", f"Waiting {WINDOW}s for further instructions", "pending"),
-        )]
-        publish(steps)
+    if cmd == "start":
+        publish(labels, 0)
         return 0
 
-    steps = load()
+    saved = json.loads(STATE.read_text())
+    existing, at = saved["labels"], saved["at"]
 
-    if cmd == "complete":
-        # Whatever is in progress, without the caller having to know which:
-        # a development environment adds a second stretch of work, so the
-        # step that finishes is not always the one that started.
-        for step in steps:
-            if step["state"] == "active":
-                step["state"] = "done"
-        publish(steps)
+    if cmd == "next":
+        existing[at + 1:at + 1] = labels
+        publish(existing, min(at + 1, len(existing)))
         return 0
 
-    if cmd == "set":
-        key, state = rest[0], rest[1]
-        for s in steps:
-            if s["key"] == key:
-                s["state"] = state
-        publish(steps)
-        return 0
-
-    if cmd == "append":
-        # Each round of the conversation adds its own lines, so the list reads
-        # as a record of what happened rather than one that rewrites itself.
-        for pair in rest:
-            key, _, label = pair.partition("=")
-            if not any(step["key"] == key for step in steps):
-                steps.append({"key": key, "label": label, "state": "pending"})
-        publish(steps)
-        return 0
-
-    if cmd == "insert-before":
-        anchor, *pairs = rest
-        new = []
-        for p in pairs:
-            key, _, label = p.partition("=")
-            if any(s["key"] == key for s in steps):
-                continue
-            new.append({"key": key, "label": label, "state": "pending"})
-        if new:
-            at = next((i for i, s in enumerate(steps) if s["key"] == anchor), None)
-            if at is None:
-                print(f"no step called {anchor} to insert before", file=sys.stderr)
-                return 1
-            steps[at:at] = new
-            publish(steps)
+    if cmd == "done":
+        publish(existing, len(existing))
         return 0
 
     print(f"unknown command {cmd}", file=sys.stderr)

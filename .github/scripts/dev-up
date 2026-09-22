@@ -33,11 +33,9 @@ running && exit 0
 
 # The agent got as far as needing this, so that stretch of work is finished.
 # What follows is the wait, and then the rest of the work under its own name.
-progress complete
-progress insert-before replying \
-  dev_ready="Preparing development environment" \
-  working_after="Working in development environment"
-progress set dev_ready active
+progress next \
+  "Preparing development environment" \
+  "Working in development environment"
 
 note "starting $IMAGE"
 docker run -d \
@@ -76,6 +74,5 @@ note "migrating"
 in_dev "bin/rake db:create db:migrate" >> "$LOG" 2>&1
 in_dev "RAILS_ENV=test bin/rake db:create db:migrate" >> "$LOG" 2>&1
 
-progress complete
-progress set working_after active
+progress next
 note "ready"

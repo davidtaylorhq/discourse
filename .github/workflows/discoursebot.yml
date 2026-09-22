@@ -83,7 +83,11 @@ jobs:
             -f body="Starting…" --jq .id)
           echo "id=$id" >> "$GITHUB_OUTPUT"
           COMMENT_ID="$id" PROGRESS_FILE="$RUNNER_TEMP/progress.json" \
-            agent/.github/scripts/progress init
+            agent/.github/scripts/progress start \
+              "Preparing the sandbox" \
+              "Working" \
+              "Replying" \
+              "Waiting ${FOLLOWUP_WINDOW}s for further instructions"
 
       - name: Resolve the pull request
         if: steps.mine.outputs.mine == 'true'
@@ -208,8 +212,7 @@ jobs:
           } > "$RUNNER_TEMP/prompt.txt"
 
           agent/.github/scripts/run-agent
-          agent/.github/scripts/progress complete
-          agent/.github/scripts/progress set replying active
+          agent/.github/scripts/progress next
 
       - name: Post what the run produced
         if: always() && steps.mine.outputs.mine == 'true'
@@ -222,7 +225,7 @@ jobs:
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         run: |
           agent/.github/scripts/post-review
-          agent/.github/scripts/progress complete
+          agent/.github/scripts/progress next
 
       - name: Keep talking
         if: success() && steps.mine.outputs.mine == 'true'
@@ -239,25 +242,11 @@ jobs:
         run: |
           # The sandbox is still up. Answering here costs the model's time and
           # nothing else, where a fresh mention costs a minute of setup first.
-          waiting=waiting
-          round=1
-          while true; do
-            agent/.github/scripts/progress set "$waiting" active
-            if ! agent/.github/scripts/next-mention --wait; then
-              agent/.github/scripts/progress complete
-              break
-            fi
-            agent/.github/scripts/progress complete
-
-            round=$((round + 1))
-            working="working_$round"
-            replying="replying_$round"
-            waiting="waiting_$round"
-            agent/.github/scripts/progress append \
-              "$working=Working" \
-              "$replying=Replying" \
-              "$waiting=Waiting ${FOLLOWUP_WINDOW}s for further instructions"
-            agent/.github/scripts/progress set "$working" active
+          while agent/.github/scripts/next-mention --wait; do
+            agent/.github/scripts/progress next \
+              "Working" \
+              "Replying" \
+              "Waiting ${FOLLOWUP_WINDOW}s for further instructions"
 
             {
               echo "There is more to answer. You are where you were, with everything"
@@ -271,11 +260,11 @@ jobs:
             } > "$RUNNER_TEMP/prompt.txt"
 
             agent/.github/scripts/next-turn
-            agent/.github/scripts/progress complete
-            agent/.github/scripts/progress set "$replying" active
+            agent/.github/scripts/progress next
             agent/.github/scripts/post-review
-            agent/.github/scripts/progress complete
+            agent/.github/scripts/progress next
           done
+          agent/.github/scripts/progress done
 
       - name: Show what happened behind the gate
         if: failure() && steps.mine.outputs.mine == 'true'
