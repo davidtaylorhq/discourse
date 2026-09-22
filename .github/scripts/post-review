@@ -15,8 +15,8 @@ import sys
 # Line comments do not carry it: once per review is a footer, on each one it is
 # noise.
 FOOTER = (
-    "<small>:robot: AI generated response. "
-    "Help us improve with a \U0001F44D or \U0001F44E reaction</small>"
+    "<sub>:robot: AI generated response. "
+    "Help us improve with a \U0001F44D or \U0001F44E reaction.</sub>"
 )
 
 
