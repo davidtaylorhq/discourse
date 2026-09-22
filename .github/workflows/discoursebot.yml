@@ -223,19 +223,28 @@ jobs:
         run: |
           # The sandbox is still up. Answering here costs the model's time and
           # nothing else, where a fresh mention costs a minute of setup first.
+          waiting=waiting
+          round=1
           while true; do
-            agent/.github/scripts/progress set waiting active
-            SINCE=$(date -u +%Y-%m-%dT%H:%M:%SZ) \
-              agent/.github/scripts/await-followup || break
+            agent/.github/scripts/progress set "$waiting" active
+            if ! SINCE=$(date -u +%Y-%m-%dT%H:%M:%SZ) agent/.github/scripts/await-followup; then
+              agent/.github/scripts/progress complete
+              break
+            fi
+            agent/.github/scripts/progress complete
 
             author=$(jq -r .author "$RUNNER_TEMP/followup.json")
             body=$(jq -r .body "$RUNNER_TEMP/followup.json")
 
-            # The waiting line is not finished, it is interrupted; it goes back
-            # to pending so the work that follows sits above it.
-            agent/.github/scripts/progress set waiting pending
-            agent/.github/scripts/progress insert-before waiting working_more="Working"
-            agent/.github/scripts/progress set working_more active
+            round=$((round + 1))
+            working="working_$round"
+            replying="replying_$round"
+            waiting="waiting_$round"
+            agent/.github/scripts/progress append \
+              "$working=Working" \
+              "$replying=Replying" \
+              "$waiting=Waiting ${FOLLOWUP_WINDOW}s for further instructions"
+            agent/.github/scripts/progress set "$working" active
 
             {
               echo "$author has said something more. You are still where you were,"
@@ -250,12 +259,10 @@ jobs:
 
             agent/.github/scripts/next-turn
             agent/.github/scripts/progress complete
-            agent/.github/scripts/progress insert-before waiting replying_more="Replying"
-            agent/.github/scripts/progress set replying_more active
+            agent/.github/scripts/progress set "$replying" active
             agent/.github/scripts/post-review
             agent/.github/scripts/progress complete
           done
-          agent/.github/scripts/progress set waiting done
 
       - name: Show what happened behind the gate
         if: failure()

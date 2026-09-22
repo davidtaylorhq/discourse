@@ -42,7 +42,7 @@ def load():
 
 def main(argv):
     if not argv:
-        print("usage: progress init|set|complete|insert-before ...", file=sys.stderr)
+        print("usage: progress init|set|complete|append|insert-before ...", file=sys.stderr)
         return 64
 
     cmd, *rest = argv
@@ -74,6 +74,16 @@ def main(argv):
         for s in steps:
             if s["key"] == key:
                 s["state"] = state
+        publish(steps)
+        return 0
+
+    if cmd == "append":
+        # Each round of the conversation adds its own lines, so the list reads
+        # as a record of what happened rather than one that rewrites itself.
+        for pair in rest:
+            key, _, label = pair.partition("=")
+            if not any(step["key"] == key for step in steps):
+                steps.append({"key": key, "label": label, "state": "pending"})
         publish(steps)
         return 0
 
