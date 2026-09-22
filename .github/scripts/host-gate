@@ -17,7 +17,9 @@ case "$SSH_ORIGINAL_COMMAND" in
   dev)
     # Bring the development environment up if it is not already, then hand the
     # command on stdin to a shell inside it. Nothing is parsed here either.
-    "$HOME/.discoursebot/dev-up" || exit 1
+    # Keep it off this connection's stdin: that is the command the agent sent,
+    # and the container it starts things in would read it as input.
+    "$HOME/.discoursebot/dev-up" </dev/null || exit 1
     exec docker exec -i -u discourse -w /src -e CI=1 discourse_dev bash -l
     ;;
   git-upload-pack*)

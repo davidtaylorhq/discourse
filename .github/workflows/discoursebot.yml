@@ -97,9 +97,16 @@ jobs:
           DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
         run: |
           if [ -z "${{ github.event.issue.pull_request }}" ]; then
-            echo "ref=" >> "$GITHUB_OUTPUT"
-            echo "can_push=false" >> "$GITHUB_OUTPUT"
-            echo "reason=this is an issue, not a pull request" >> "$GITHUB_OUTPUT"
+            # No branch of its own, so it reads the default one. Everything
+            # downstream wants a branch and a commit; only pushing differs.
+            oid=$(gh api "repos/${{ github.repository }}/commits/$DEFAULT_BRANCH" --jq .sha)
+            {
+              echo "ref=refs/heads/$DEFAULT_BRANCH"
+              echo "head_ref=$DEFAULT_BRANCH"
+              echo "head_oid=$oid"
+              echo "can_push=false"
+              echo "reason=this is an issue, not a pull request"
+            } >> "$GITHUB_OUTPUT"
             exit 0
           fi
 
@@ -138,7 +145,7 @@ jobs:
           git --git-dir="$RUNNER_TEMP/relay.git" \
             -c http.extraheader="AUTHORIZATION: basic $auth" \
             fetch -q --depth 1 "${{ github.server_url }}/${{ github.repository }}.git" \
-            "+refs/pull/${{ github.event.issue.number }}/head:refs/heads/$HEAD_REF"
+            "+${{ steps.pr.outputs.ref }}:refs/heads/$HEAD_REF"
 
       - name: Stand up the host services
         if: steps.mine.outputs.mine == 'true'
