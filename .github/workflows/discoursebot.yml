@@ -76,15 +76,20 @@ jobs:
             printf '%s\n' "$COMMENT_BODY"
           } > prompt.txt
 
+          set -o pipefail
           term-llm ask \
             --agent reviewer \
             --provider claude-bin \
             --no-session \
-            --porcelain \
+            --text \
+            --stats \
             --max-turns 60 \
             --timeout 15m \
             --shell-allow 'gh issue view *' \
-            "$(cat prompt.txt)" > reply.md
+            "$(cat prompt.txt)" | tee agent.log
+
+          # Tool status lines are ANSI-coloured and start with a filled circle.
+          sed -e 's/\x1b\[[0-9;]*m//g' agent.log | grep -v '^●' > reply.md
 
       - name: Post reply
         env:
