@@ -38,9 +38,12 @@ def gh(args, quiet=False):
     return p.stdout if p.returncode == 0 else ""
 
 
-def comments(repo, issue):
+def comments(repo, issue, since):
+    # Ask only for what could possibly be outstanding. Polling every few
+    # seconds for every comment on a long thread is a lot of pages for an
+    # answer that is almost always "nothing new".
     out = []
-    for page in gh(["--paginate", f"repos/{repo}/issues/{issue}/comments"]).splitlines():
+    for page in gh(["--paginate", f"repos/{repo}/issues/{issue}/comments?since={since}"]).splitlines():
         try:
             out.extend(json.loads(page))
         except json.JSONDecodeError:
@@ -48,7 +51,12 @@ def comments(repo, issue):
     return out
 
 
-def is_claimed(repo, comment_id):
+def is_claimed(repo, comment):
+    # The count comes with the comment. Nought means nobody has reacted at
+    # all, which settles it without asking; anything else needs to know who.
+    if not comment.get("reactions", {}).get(CLAIM):
+        return False
+    comment_id = comment["id"]
     for page in gh(["--paginate", f"repos/{repo}/issues/comments/{comment_id}/reactions"]).splitlines():
         try:
             for r in json.loads(page):
@@ -74,7 +82,7 @@ def claim(repo, comment_id):
 
 def outstanding(repo, issue, cutoff):
     found = []
-    for c in comments(repo, issue):
+    for c in comments(repo, issue, cutoff):
         if c["created_at"] < cutoff:
             continue
         if c["user"]["login"].endswith("[bot]"):
@@ -91,7 +99,7 @@ def outstanding(repo, issue, cutoff):
 def take(repo, issue, cutoff, out):
     taken = []
     for c in outstanding(repo, issue, cutoff):
-        if is_claimed(repo, c["id"]) or not claim(repo, c["id"]):
+        if is_claimed(repo, c) or not claim(repo, c["id"]):
             continue
         taken.append({
             "id": c["id"], "author": c["user"]["login"],
