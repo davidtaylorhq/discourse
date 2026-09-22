@@ -31,10 +31,13 @@ jobs:
       # How long the sandbox is held open after replying, and what the
       # checklist says it is doing while it holds.
       FOLLOWUP_WINDOW: 60
+      # Old enough that nobody is waiting on an answer. A backlog from an
+      # outage should stay unanswered rather than all arrive at once.
+      MAX_COMMENT_AGE_HOURS: 6
 
     steps:
       - name: Check out the agent
-        if: steps.claimed.outputs.skip != 'true'
+        if: steps.mine.outputs.mine == 'true'
         uses: actions/checkout@v7
         with:
           # The same commit the workflow itself came from. Left to default this
@@ -48,21 +51,25 @@ jobs:
           path: agent
           persist-credentials: false
 
-      - name: Stand down if another run has this
-        id: claimed
+      - name: Take the oldest mention nobody has
+        id: mine
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+          MENTION_FILE: ${{ runner.temp }}/mention.json
         run: |
-          if gh api --paginate \
-            "repos/${{ github.repository }}/issues/comments/${{ github.event.comment.id }}/reactions" \
-            --jq '.[] | select(.content == "eyes") | .user.login' | grep -q '\[bot\]$'
-          then
-            echo "a run already up is answering this one"
-            echo "skip=true" >> "$GITHUB_OUTPUT"
+          # Not necessarily the comment that started this run: GitHub keeps one
+          # pending run per issue and cancels the rest, so a comment whose run
+          # was cancelled has nothing else looking for it.
+          if agent/.github/scripts/next-mention; then
+            echo "mine=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "everything here has been answered"
           fi
 
       - name: Say we are on it
-        if: steps.claimed.outputs.skip != 'true'
+        if: steps.mine.outputs.mine == 'true'
         id: ack
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -76,7 +83,7 @@ jobs:
             agent/.github/scripts/progress init
 
       - name: Resolve the pull request
-        if: steps.claimed.outputs.skip != 'true'
+        if: steps.mine.outputs.mine == 'true'
         id: pr
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -112,7 +119,7 @@ jobs:
           fi
 
       - name: Fetch the branch
-        if: steps.claimed.outputs.skip != 'true'
+        if: steps.mine.outputs.mine == 'true'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           HEAD_REF: ${{ steps.pr.outputs.head_ref }}
@@ -127,7 +134,7 @@ jobs:
             "+refs/pull/${{ github.event.issue.number }}/head:refs/heads/$HEAD_REF"
 
       - name: Stand up the host services
-        if: steps.claimed.outputs.skip != 'true'
+        if: steps.mine.outputs.mine == 'true'
         env:
           HEAD_REF: ${{ steps.pr.outputs.head_ref }}
           HEAD_OID: ${{ steps.pr.outputs.head_oid }}
@@ -146,16 +153,14 @@ jobs:
           agent/.github/scripts/host-setup
 
       - name: Run the agent
-        if: steps.claimed.outputs.skip != 'true'
+        if: steps.mine.outputs.mine == 'true'
         env:
-          COMMENT_BODY: ${{ github.event.comment.body }}
-          COMMENT_AUTHOR: ${{ github.event.comment.user.login }}
+          MENTION_FILE: ${{ runner.temp }}/mention.json
           ISSUE_NUMBER: ${{ github.event.issue.number }}
           IS_PULL_REQUEST: ${{ github.event.issue.pull_request && 'yes' || 'no' }}
           REPO: ${{ github.repository }}
           GITHUB_REPOSITORY: ${{ github.repository }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          SKIP_COMMENT_ID: ${{ github.event.comment.id }}
           HEAD_REF: ${{ steps.pr.outputs.head_ref }}
           CAN_PUSH: ${{ steps.pr.outputs.can_push }}
           PUSH_BLOCKED_BECAUSE: ${{ steps.pr.outputs.reason }}
@@ -167,6 +172,10 @@ jobs:
           PROGRESS_FILE: ${{ runner.temp }}/progress.json
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         run: |
+          COMMENT_AUTHOR=$(jq -r .author "$MENTION_FILE")
+          COMMENT_BODY=$(jq -r .body "$MENTION_FILE")
+          SKIP_COMMENT_ID=$(jq -r .id "$MENTION_FILE")
+          export SKIP_COMMENT_ID
           {
             echo "You are answering a GitHub comment on ${REPO}, issue/PR #${ISSUE_NUMBER}."
             if [ "$IS_PULL_REQUEST" = "yes" ]; then
@@ -199,7 +208,7 @@ jobs:
           agent/.github/scripts/progress set replying active
 
       - name: Post what the run produced
-        if: always() && steps.claimed.outputs.skip != 'true'
+        if: always() && steps.mine.outputs.mine == 'true'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_REPOSITORY: ${{ github.repository }}
@@ -210,14 +219,9 @@ jobs:
         run: |
           agent/.github/scripts/post-review
           agent/.github/scripts/progress complete
-          # Every comment the bot answers ends up marked, whether a run picked
-          # it up while waiting or was started by it.
-          gh api --method POST \
-            "/repos/${{ github.repository }}/issues/comments/${{ github.event.comment.id }}/reactions" \
-            -f content=eyes >/dev/null
 
       - name: Keep talking
-        if: success() && steps.claimed.outputs.skip != 'true'
+        if: success() && steps.mine.outputs.mine == 'true'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_REPOSITORY: ${{ github.repository }}
@@ -225,7 +229,7 @@ jobs:
           COMMENT_ID: ${{ steps.ack.outputs.id }}
           PROGRESS_FILE: ${{ runner.temp }}/progress.json
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
-          FOLLOWUP_FILE: ${{ runner.temp }}/followup.json
+          MENTION_FILE: ${{ runner.temp }}/mention.json
           CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.ANTHROPIC_OAUTH_TOKEN }}
           REPO: ${{ github.repository }}
         run: |
@@ -233,20 +237,16 @@ jobs:
           # nothing else, where a fresh mention costs a minute of setup first.
           waiting=waiting
           round=1
-          # Measured from the comment being answered, so anything said while the
-          # agent was working is waiting here rather than needing its own run.
-          since=${{ toJSON(github.event.comment.created_at) }}
           while true; do
             agent/.github/scripts/progress set "$waiting" active
-            if ! SINCE="$since" agent/.github/scripts/await-followup; then
+            if ! agent/.github/scripts/next-mention --wait; then
               agent/.github/scripts/progress complete
               break
             fi
             agent/.github/scripts/progress complete
 
-            author=$(jq -r .author "$RUNNER_TEMP/followup.json")
-            body=$(jq -r .body "$RUNNER_TEMP/followup.json")
-            since=$(jq -r .created_at "$RUNNER_TEMP/followup.json")
+            author=$(jq -r .author "$MENTION_FILE")
+            body=$(jq -r .body "$MENTION_FILE")
 
             round=$((round + 1))
             working="working_$round"
