@@ -1,0 +1,75 @@
+#!/usr/bin/env python3
+"""Print what has already been said on this issue.
+
+The agent has no memory between mentions and the thread is where the
+conversation actually lives, so it goes in the prompt rather than depending on
+the agent choosing to look it up.
+"""
+import json
+import os
+import subprocess
+import sys
+
+KEEP = 20
+WIDTH = 800
+
+# The bot's own bookkeeping is not conversation.
+NOISE = ("Superseded by a newer mention.", "The run failed.", "Starting…")
+CHECKLIST = ("✅", "⏳", "⬜")
+FOOTER_AT = "<sub>:robot:"
+
+
+def comments(repo, issue):
+    p = subprocess.run(
+        ["gh", "api", "--paginate", f"repos/{repo}/issues/{issue}/comments"],
+        input="", capture_output=True, text=True,
+    )
+    if p.returncode != 0:
+        print(p.stderr.strip(), file=sys.stderr)
+        return []
+    out = []
+    for page in p.stdout.strip().splitlines():
+        try:
+            out.extend(json.loads(page))
+        except json.JSONDecodeError:
+            pass
+    return out
+
+
+def useful(c):
+    body = (c.get("body") or "").strip()
+    if not body or body.startswith(NOISE) or body[0] in CHECKLIST:
+        return False
+    return True
+
+
+def main():
+    repo = os.environ["GITHUB_REPOSITORY"]
+    issue = os.environ["ISSUE_NUMBER"]
+    skip = os.environ.get("SKIP_COMMENT_ID", "")
+
+    kept = [c for c in comments(repo, issue) if useful(c) and str(c.get("id")) != skip]
+    if not kept:
+        return 0
+
+    dropped = len(kept) - KEEP
+    if dropped > 0:
+        print(f"({dropped} earlier comment(s) not shown; read them if you need them)\n")
+        kept = kept[-KEEP:]
+
+    for c in kept:
+        body = c["body"].strip()
+        # The signature is ours, not something anyone said.
+        at = body.find(FOOTER_AT)
+        if at != -1:
+            body = body[:at].rstrip()
+        if len(body) > WIDTH:
+            body = body[:WIDTH] + " […]"
+        print(f"@{c['user']['login']}:")
+        print(body)
+        print()
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())
