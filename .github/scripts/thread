@@ -49,9 +49,9 @@ def useful(c):
 def main():
     repo = os.environ["GITHUB_REPOSITORY"]
     issue = os.environ["ISSUE_NUMBER"]
-    skip = os.environ.get("SKIP_COMMENT_ID", "")
+    skip = set(os.environ.get("SKIP_COMMENT_IDS", "").split())
 
-    kept = [c for c in comments(repo, issue) if useful(c) and str(c.get("id")) != skip]
+    kept = [c for c in comments(repo, issue) if useful(c) and str(c.get("id")) not in skip]
     if not kept:
         return 0
 
