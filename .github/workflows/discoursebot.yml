@@ -123,6 +123,10 @@ jobs:
             resume="--resume"
           fi
 
+          # Progress output redraws itself with carriage returns, which a log
+          # renders as one line per frame. Keep only the last state of each line.
+          set -o pipefail
+
           term-llm ask \
             --agent discoursebot \
             --provider claude-bin \
@@ -132,7 +136,7 @@ jobs:
             --stats \
             --max-turns 200 \
             --timeout 15m \
-            "$(cat prompt.txt)"
+            "$(cat prompt.txt)" 2>&1 | sed -u -e 's/.*\r//'
 
       - name: Save the conversation
         if: always()
