@@ -37,7 +37,13 @@ def render(steps):
     lines = []
     for s in steps:
         name, alt = MARK[s["state"]]
-        mark = f'<img src="{assets}/{name}" width="13" height="13" alt="{alt}">'
+        # An image sits its bottom on the baseline by default, which leaves a
+        # round mark floating above the capitals. Centring it on the x-height
+        # puts its top level with them.
+        mark = (
+            f'<img src="{assets}/{name}" width="13" height="13" alt="{alt}"'
+            ' style="vertical-align: middle; margin-right: 2px">'
+        )
         lines.append(f"{mark} {s['label']}")
     run = os.environ.get("RUN_URL", "")
     opening = f"{OPENING} {FOLLOW.format(run=run)}" if run else OPENING
