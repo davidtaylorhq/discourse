@@ -30,6 +30,10 @@ jobs:
       - name: Check out the agent
         uses: actions/checkout@v7
         with:
+          # The same commit the workflow itself came from. Left to default this
+          # takes whatever the branch is at checkout time, which during a push
+          # pairs one version of the workflow with another of its scripts.
+          ref: ${{ github.sha }}
           fetch-depth: 1
           sparse-checkout: |
             .github/term-llm

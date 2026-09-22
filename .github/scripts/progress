@@ -84,7 +84,10 @@ def main(argv):
                 continue
             new.append({"key": key, "label": label, "state": "pending"})
         if new:
-            at = next((i for i, s in enumerate(steps) if s["key"] == anchor), len(steps))
+            at = next((i for i, s in enumerate(steps) if s["key"] == anchor), None)
+            if at is None:
+                print(f"no step called {anchor} to insert before", file=sys.stderr)
+                return 1
             steps[at:at] = new
             publish(steps)
         return 0
