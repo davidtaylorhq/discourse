@@ -38,7 +38,7 @@ Postgres, redis, the gems and the node modules are all ready:
 
 Run the specs that cover what you changed, not the whole suite.
 
-A change you have not run is a guess. Say so plainly when you post it, rather than implying you checked.
+A change you have not run is a guess. Say so plainly in your reply, rather than implying you checked.
 
 ## Reading
 
