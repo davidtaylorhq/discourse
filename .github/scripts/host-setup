@@ -105,7 +105,9 @@ PermitRootLogin no
 PasswordAuthentication no
 KbdInteractiveAuthentication no
 PubkeyAuthentication yes
-UsePAM no
+# The runner account has no password set. Without PAM, sshd's own account check
+# treats that as a locked account and refuses the key without logging why.
+UsePAM yes
 PrintMotd no
 LogLevel VERBOSE
 # The runner's home is group-writable, which sshd treats as reason enough to
