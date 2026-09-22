@@ -12,6 +12,7 @@ import sys
 
 MARK = {"done": "✅", "active": "⏳", "pending": "⬜"}
 STATE = pathlib.Path(os.environ.get("PROGRESS_FILE", "/tmp/progress.json"))
+WINDOW = os.environ.get("FOLLOWUP_WINDOW", "60")
 
 
 def render(steps):
@@ -51,7 +52,7 @@ def main(argv):
             ("sandbox", "Preparing the sandbox", "active"),
             ("working", "Working", "pending"),
             ("replying", "Replying", "pending"),
-            ("waiting", "Waiting for anything further", "pending"),
+            ("waiting", f"Waiting {WINDOW}s for further instructions", "pending"),
         )]
         publish(steps)
         return 0

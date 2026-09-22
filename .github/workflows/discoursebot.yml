@@ -25,6 +25,9 @@ jobs:
 
     env:
       TERM_LLM_VERSION: v0.9.54
+      # How long the sandbox is held open after replying, and what the
+      # checklist says it is doing while it holds.
+      FOLLOWUP_WINDOW: 60
 
     steps:
       - name: Check out the agent
