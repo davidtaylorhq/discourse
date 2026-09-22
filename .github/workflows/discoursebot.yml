@@ -136,7 +136,6 @@ jobs:
           CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.ANTHROPIC_OAUTH_TOKEN }}
           COMMENT_ID: ${{ steps.ack.outputs.id }}
           PROGRESS_FILE: ${{ runner.temp }}/progress.json
-          GITHUB_REPOSITORY: ${{ github.repository }}
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         run: |
           {
