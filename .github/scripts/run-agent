@@ -54,6 +54,7 @@ docker exec -u root "$CONTAINER" chmod 600 /home/discourse/.ssh/gate
 log "installing term-llm"
 as_agent "curl -fsSL https://raw.githubusercontent.com/samsaffron/term-llm/${TERM_LLM_VERSION}/install.sh | sh"
 
+log "sandbox key: $(docker exec -u discourse "$CONTAINER" ssh-keygen -lf /home/discourse/.ssh/gate 2>&1 || true)"
 log "checking the gate"
 as_agent "ssh -v -i /home/discourse/.ssh/gate -p $SSH_PORT \
   -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null \

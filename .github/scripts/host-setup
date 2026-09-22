@@ -134,6 +134,11 @@ fi
 # configured with; term-llm drops the requested name deliberately. Swapping to
 # another provider is a change here and nowhere else.
 step "home permissions: $(stat -c '%A %U:%G' "$HOME") / $(stat -c '%A %U:%G' "$HOME/.ssh")"
+step "effective config:"
+sudo /usr/sbin/sshd -T -f "$STATE/sshd_config" 2>&1 \
+  | grep -iE '^(authorizedkeysfile|allowusers|pubkeyauth|strictmodes|port|listenaddress|loglevel)' >&2 || true
+step "authorized key: $(ssh-keygen -lf "$STATE/clientkey.pub" 2>&1)"
+step "authorized_keys has $(wc -l < "$HOME/.ssh/authorized_keys") line(s), options: $(cut -d' ' -f1 "$HOME/.ssh/authorized_keys" | tail -1)"
 step "gate is listening on:"
 ss -tln | grep ":$SSH_PORT" >&2 || echo "[host] nothing on $SSH_PORT" >&2
 
