@@ -103,6 +103,7 @@ KbdInteractiveAuthentication no
 PubkeyAuthentication yes
 UsePAM no
 PrintMotd no
+LogLevel VERBOSE
 X11Forwarding no
 AllowTcpForwarding no
 AllowAgentForwarding no

@@ -5,7 +5,7 @@
 # through the ssh gate, for the repository and for GitHub, and through an HTTP
 # endpoint for inference. Because there is nothing in there worth taking, the
 # agent runs with approvals off.
-set -euo pipefail
+set -Eeuo pipefail
 
 : "${RUNNER_TEMP:?}" "${BRIDGE_IP:?}" "${SSH_PORT:?}" "${SERVE_PORT:?}"
 : "${SERVE_TOKEN:?}" "${CLIENT_KEY:?}" "${HEAD_REF:?}" "${AGENT_DIR:?}"
@@ -51,6 +51,11 @@ docker exec -u root "$CONTAINER" chmod 600 /home/discourse/.ssh/gate
 
 log "installing term-llm"
 as_agent "curl -fsSL https://raw.githubusercontent.com/samsaffron/term-llm/${TERM_LLM_VERSION}/install.sh | sh"
+
+log "checking the gate"
+as_agent "ssh -v -i /home/discourse/.ssh/gate -p $SSH_PORT \
+  -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null \
+  -o BatchMode=yes $GATE_USER@host.docker.internal mcp </dev/null 2>&1 | tail -25" || true
 
 log "cloning the branch"
 as_agent "
