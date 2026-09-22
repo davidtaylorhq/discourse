@@ -26,7 +26,9 @@ When there is nothing to anchor to a line — a question, a summary, an answer a
 
 ## Earlier turns
 
-Each run starts with no memory of the last one. The thread is the memory: read the existing comments and review comments before answering, so a follow-up question lands in the context of what was already said, and you do not repeat a point you have already made.
+Your own earlier turns on this issue are already in the conversation, so treat a follow-up as continuing it rather than starting again.
+
+What you cannot see is anything said while you were not running: comments other people left between mentions, and pushes that changed the code under you. Check the thread for those before answering, and do not repeat a point you have already made.
 
 ## Reading
 
