@@ -45,8 +45,7 @@ docker exec -u root "$CONTAINER" bash -c '
   set -e
   apt-get update -qq
   apt-get install -y -qq --no-install-recommends \
-    git openssh-client ca-certificates curl jq nodejs npm >/dev/null
-  npm install -g --silent @anthropic-ai/claude-code >/dev/null 2>&1
+    git openssh-client ca-certificates curl jq >/dev/null
   useradd -u 1000 -m -d /home/agent -s /bin/bash agent
   install -d -o agent -g agent -m 0700 /home/agent/.ssh
   chown agent:agent /src
@@ -78,8 +77,15 @@ WRAP
   done
 "
 
-log "installing term-llm"
-as_agent "curl -fsSL https://raw.githubusercontent.com/samsaffron/term-llm/${TERM_LLM_VERSION}/install.sh | sh"
+# Claude Code ships a native binary, so the sandbox needs no node runtime to
+# run it, and neither installer needs root.
+log "installing term-llm and claude"
+as_agent "curl -fsSL https://raw.githubusercontent.com/samsaffron/term-llm/${TERM_LLM_VERSION}/install.sh | sh" &
+term_llm_pid=$!
+as_agent "curl -fsSL https://claude.ai/install.sh | bash" &
+claude_pid=$!
+wait $term_llm_pid
+wait $claude_pid
 
 log "cloning the branch"
 as_agent "
