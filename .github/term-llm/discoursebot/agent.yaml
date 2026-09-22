@@ -5,7 +5,10 @@ agents_md: "true"
 skills: "all"
 
 tools:
-  enabled: [read_file, glob, grep, write_file, shell]
+  enabled: [read_file, glob, grep, shell]
+
+mcp:
+  - name: github
 
 shell:
   allow:
@@ -17,12 +20,6 @@ shell:
     - "git blame *"
     - "git merge-base *"
     - "git rev-parse *"
-    - "gh pr view *"
-    - "gh pr diff *"
-    - "gh issue view *"
-    - "gh pr comment *"
-    - "gh issue comment *"
-    - "gh api --method POST repos/*/pulls/*/reviews --input *"
   auto_run: true
   scripts:
     pr-head-sha: "git rev-parse HEAD"
