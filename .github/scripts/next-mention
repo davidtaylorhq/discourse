@@ -1,11 +1,16 @@
 #!/usr/bin/env python3
-"""Find the oldest mention nobody has taken, and take it.
+"""Find the mentions nobody has taken, and take them.
 
 A run answers whatever is outstanding rather than the comment that happened to
 start it. GitHub keeps one pending run per issue and cancels the rest, so a
 comment whose own run was cancelled has nothing else looking for it; answering
 oldest-first means the next run to start picks it up, whichever comment that
 run was started by.
+
+Everything already waiting is taken together and answered in one turn. People
+correct themselves within seconds of asking, and answering the first comment
+before reading the second means acting on an instruction that has already been
+withdrawn.
 
 Exits non-zero when there is nothing to answer.
 """
@@ -84,16 +89,20 @@ def outstanding(repo, issue, cutoff):
 
 
 def take(repo, issue, cutoff, out):
+    taken = []
     for c in outstanding(repo, issue, cutoff):
         if is_claimed(repo, c["id"]) or not claim(repo, c["id"]):
             continue
-        out.write_text(json.dumps({
+        taken.append({
             "id": c["id"], "author": c["user"]["login"],
             "body": c["body"], "created_at": c["created_at"],
-        }))
-        print(f"answering {c['user']['login']}'s comment {c['id']}", file=sys.stderr)
-        return True
-    return False
+        })
+    if not taken:
+        return False
+    out.write_text(json.dumps(taken))
+    who = ", ".join(str(c["id"]) for c in taken)
+    print(f"answering {len(taken)} comment(s): {who}", file=sys.stderr)
+    return True
 
 
 def main():

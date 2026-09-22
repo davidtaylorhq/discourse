@@ -12,6 +12,9 @@ import sys
 
 KEEP = 20
 WIDTH = 800
+# Anyone else can comment on a pull request. Their words belong in the record,
+# but the agent should know whose words carry weight.
+TRUSTED = {"OWNER", "MEMBER", "COLLABORATOR"}
 
 # The bot's own bookkeeping is not conversation.
 NOISE = ("Superseded by a newer mention.", "The run failed.", "Starting…")
@@ -65,7 +68,12 @@ def main():
             body = body[:at].rstrip()
         if len(body) > WIDTH:
             body = body[:WIDTH] + " […]"
-        print(f"@{c['user']['login']}:")
+        who = c["user"]["login"]
+        if who.endswith("[bot]"):
+            who = "you"
+        elif c.get("author_association") not in TRUSTED:
+            who = f"{who} (cannot write to this repository)"
+        print(f"@{who}:")
         print(body)
         print()
     return 0
