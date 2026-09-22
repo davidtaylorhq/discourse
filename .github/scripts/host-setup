@@ -14,8 +14,12 @@ PUSHED="$RUNNER_TEMP/relay.pushed"
 SSH_PORT=2222
 SERVE_PORT=8088
 MCP_IMAGE=ghcr.io/github/github-mcp-server:v1.12.2
+WORKTREE_VOLUME=discoursebot-worktree
+POSTGRES_VOLUME=discoursebot-postgres
 
 step "preparing $STATE"
+docker volume create "$WORKTREE_VOLUME" >/dev/null
+docker volume create "$POSTGRES_VOLUME" >/dev/null
 mkdir -p "$STATE"
 chmod 700 "$STATE"
 
@@ -78,11 +82,21 @@ export GITHUB_PERSONAL_ACCESS_TOKEN='$GH_TOKEN'
 export GH_TOKEN='$GH_TOKEN'
 export GITHUB_TOOLSETS='${GITHUB_TOOLSETS:-pull_requests,issues}'
 export GITHUB_READ_ONLY=1
+export WORKTREE_VOLUME='$WORKTREE_VOLUME'
+export POSTGRES_VOLUME='$POSTGRES_VOLUME'
+export PROGRESS='$STATE/progress'
+export PROGRESS_FILE='$RUNNER_TEMP/progress.json'
+export COMMENT_ID='${COMMENT_ID:-}'
+export GITHUB_REPOSITORY='$GITHUB_REPOSITORY'
+export RUN_URL='${RUN_URL:-}'
+export RUNNER_TEMP='$RUNNER_TEMP'
 export CAN_PUSH='${CAN_PUSH:-false}'
 export PUSH_BLOCKED_BECAUSE='${PUSH_BLOCKED_BECAUSE:-}'
 ENV
 chmod 600 "$STATE/env"
-install -m 0755 "$(dirname "$0")/host-gate" "$STATE/gate"
+install -m 0755 "$(dirname "$0")/host-gate"  "$STATE/gate"
+install -m 0755 "$(dirname "$0")/dev-up"     "$STATE/dev-up"
+install -m 0755 "$(dirname "$0")/progress"   "$STATE/progress"
 
 # --------------------------------------------------------------- the ssh gate
 step "generating keys"
@@ -177,6 +191,7 @@ fi
   echo "SERVE_TOKEN=$serve_token"
   echo "CLIENT_KEY=$STATE/clientkey"
   echo "GATE_USER=$(id -un)"
+  echo "WORKTREE_VOLUME=$WORKTREE_VOLUME"
 } >> "$GITHUB_ENV"
 
 echo "gate on $bridge:$SSH_PORT, inference on $bridge:$SERVE_PORT"

@@ -33,8 +33,10 @@ jobs:
         run: |
           id=$(gh api --method POST \
             "/repos/${{ github.repository }}/issues/${{ github.event.issue.number }}/comments" \
-            -f body="On it — [watch the log]($RUN_URL)." --jq .id)
+            -f body="Starting…" --jq .id)
           echo "id=$id" >> "$GITHUB_OUTPUT"
+          COMMENT_ID="$id" PROGRESS_FILE="$RUNNER_TEMP/progress.json" \
+            agent/.github/scripts/progress init
 
       - name: Check out the agent
         uses: actions/checkout@v7
@@ -95,6 +97,8 @@ jobs:
           HEAD_OID: ${{ steps.pr.outputs.head_oid }}
           CAN_PUSH: ${{ steps.pr.outputs.can_push }}
           PUSH_BLOCKED_BECAUSE: ${{ steps.pr.outputs.reason }}
+          COMMENT_ID: ${{ steps.ack.outputs.id }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
           GITHUB_TOOLSETS: pull_requests,issues
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.ANTHROPIC_OAUTH_TOKEN }}
@@ -138,6 +142,10 @@ jobs:
           PUSH_BLOCKED_BECAUSE: ${{ steps.pr.outputs.reason }}
           AGENT_DIR: ${{ github.workspace }}/agent/.github/term-llm/discoursebot
           SKILLS_DIR: ${{ github.workspace }}/agent/.github/term-llm/skills
+          COMMENT_ID: ${{ steps.ack.outputs.id }}
+          PROGRESS_FILE: ${{ runner.temp }}/progress.json
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         run: |
           {
             echo "You are answering a GitHub comment on ${REPO}, issue/PR #${ISSUE_NUMBER}."
@@ -163,7 +171,9 @@ jobs:
           sed -e "s/__SSH_PORT__/$SSH_PORT/" -e "s/__GATE_USER__/$GATE_USER/" \
             agent/.github/term-llm/mcp.json > "$RUNNER_TEMP/mcp.json"
 
+          agent/.github/scripts/progress set agent active
           agent/.github/scripts/run-agent
+          agent/.github/scripts/progress set agent done
 
       - name: Post what the run produced
         if: always()
@@ -171,7 +181,12 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_REPOSITORY: ${{ github.repository }}
           ISSUE_NUMBER: ${{ github.event.issue.number }}
-        run: agent/.github/scripts/post-review
+          COMMENT_ID: ${{ steps.ack.outputs.id }}
+          PROGRESS_FILE: ${{ runner.temp }}/progress.json
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          agent/.github/scripts/post-review
+          agent/.github/scripts/progress set responded done
 
       - name: Save the conversation
         if: always()

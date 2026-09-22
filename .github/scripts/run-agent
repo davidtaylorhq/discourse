@@ -1,64 +1,81 @@
 #!/bin/bash
 # Boot the sandbox and run the agent in it.
 #
-# The container has no volumes and no credentials. It reaches the runner only
-# through the ssh gate, for the repository and for GitHub, and through an HTTP
-# endpoint for inference. Because there is nothing in there worth taking, the
-# agent runs with approvals off.
+# The sandbox is deliberately small: git, ssh and term-llm. It holds no
+# credentials and mounts nothing from the runner. The work tree is a docker
+# volume, which the development environment mounts too if the agent ever needs
+# one, so a run that only answers a question never waits for Ruby.
 set -Eeuo pipefail
 
 : "${RUNNER_TEMP:?}" "${BRIDGE_IP:?}" "${SSH_PORT:?}" "${SERVE_PORT:?}"
 : "${SERVE_TOKEN:?}" "${CLIENT_KEY:?}" "${HEAD_REF:?}" "${AGENT_DIR:?}"
-: "${GATE_USER:?}" "${SKILLS_DIR:?}"
-: "${TERM_LLM_VERSION:?}"
+: "${GATE_USER:?}" "${SKILLS_DIR:?}" "${TERM_LLM_VERSION:?}" "${WORKTREE_VOLUME:?}"
 
 CONTAINER=discourse_sandbox
-IMAGE=discourse/discourse_dev:release
-SSH_CMD="ssh -i /home/discourse/.ssh/gate -p $SSH_PORT -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null"
+IMAGE=debian:stable-slim
+HOME_DIR=/home/agent
+SSH_OPTS="-i $HOME_DIR/.ssh/gate -p $SSH_PORT -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null"
 
 log() { echo "[sandbox] $*" >&2; }
 
-# Whatever goes wrong in here, the reason is usually on the other side of the
-# gate, where only the runner can see it.
 dump_host_log() {
   echo "[sandbox] --- sshd log ---" >&2
   sudo cat "$RUNNER_TEMP/sshd.log" 2>/dev/null >&2 || true
-  echo "[sandbox] --- auth log ---" >&2
-  sudo tail -30 /var/log/auth.log 2>/dev/null >&2 || true
 }
 trap dump_host_log ERR
 
 as_agent() {
-  docker exec -i -u discourse -w /src \
-    -e CI=1 \
-    -e GIT_SSH_COMMAND="$SSH_CMD" \
+  docker exec -i -u agent -w /src \
+    -e HOME="$HOME_DIR" \
+    -e GIT_SSH_COMMAND="ssh $SSH_OPTS" \
     "$CONTAINER" bash -lc 'export PATH="$HOME/.local/bin:$PATH"; '"$1"
 }
 
 log "booting $IMAGE"
 docker run -d \
   --name "$CONTAINER" \
-  --hostname discourse \
   --add-host "host.docker.internal:$BRIDGE_IP" \
-  "$IMAGE" /sbin/boot >/dev/null
+  -v "$WORKTREE_VOLUME:/src" \
+  "$IMAGE" sleep infinity >/dev/null
 
 docker exec -u root "$CONTAINER" bash -c '
   set -e
-  install -d -o discourse -g discourse -m 0700 /home/discourse/.ssh
-  install -d -o discourse -g discourse /src
+  apt-get update -qq
+  apt-get install -y -qq --no-install-recommends \
+    git openssh-client ca-certificates curl jq >/dev/null
+  useradd -u 1000 -m -d /home/agent -s /bin/bash agent
+  install -d -o agent -g agent -m 0700 /home/agent/.ssh
+  chown agent:agent /src
 '
-docker cp "$CLIENT_KEY" "$CONTAINER:/home/discourse/.ssh/gate"
-docker exec -u root "$CONTAINER" chown discourse:discourse /home/discourse/.ssh/gate
-docker exec -u root "$CONTAINER" chmod 600 /home/discourse/.ssh/gate
+
+docker cp "$CLIENT_KEY" "$CONTAINER:$HOME_DIR/.ssh/gate"
+docker exec -u root "$CONTAINER" chown agent:agent "$HOME_DIR/.ssh/gate"
+docker exec -u root "$CONTAINER" chmod 600 "$HOME_DIR/.ssh/gate"
+
+# Anything that needs Ruby, node or the database runs in the development
+# environment instead of failing here. The shebang on bin/rspec and friends is
+# `env ruby`, so shimming ruby catches those without the agent having to know.
+log "installing shims for the development environment"
+docker exec -u root "$CONTAINER" bash -c "
+  set -e
+  cat > /usr/local/bin/dev <<'WRAP'
+#!/bin/bash
+# Run a command in the Discourse development environment.
+set -euo pipefail
+printf 'cd %q\n' \"\$PWD\" > /tmp/dev.\$\$
+printf '%q ' \"\$@\" >> /tmp/dev.\$\$
+printf '\n' >> /tmp/dev.\$\$
+exec ssh $SSH_OPTS $GATE_USER@host.docker.internal dev < /tmp/dev.\$\$
+WRAP
+  chmod 0755 /usr/local/bin/dev
+  for c in ruby bundle bundler pnpm node npx psql rake rails; do
+    printf '#!/bin/sh\nexec /usr/local/bin/dev %s \"\$@\"\n' \"\$c\" > /usr/local/bin/\$c
+    chmod 0755 /usr/local/bin/\$c
+  done
+"
 
 log "installing term-llm"
 as_agent "curl -fsSL https://raw.githubusercontent.com/samsaffron/term-llm/${TERM_LLM_VERSION}/install.sh | sh"
-
-log "sandbox key: $(docker exec -u discourse "$CONTAINER" ssh-keygen -lf /home/discourse/.ssh/gate 2>&1 || true)"
-log "checking the gate"
-as_agent "ssh -v -i /home/discourse/.ssh/gate -p $SSH_PORT \
-  -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null \
-  -o BatchMode=yes $GATE_USER@host.docker.internal mcp </dev/null 2>&1 | tail -25" || true
 
 log "cloning the branch"
 as_agent "
@@ -70,16 +87,14 @@ as_agent "
 "
 
 log "installing the agent"
-docker exec -u root "$CONTAINER" install -d -o discourse -g discourse \
-  /home/discourse/.config/term-llm/agents
-docker cp "$AGENT_DIR/." "$CONTAINER:/home/discourse/.config/term-llm/agents/discoursebot"
-docker exec -u root "$CONTAINER" install -d -o discourse -g discourse \
-  /home/discourse/.config/term-llm/skills
-docker cp "$SKILLS_DIR/." "$CONTAINER:/home/discourse/.config/term-llm/skills"
-docker cp "$RUNNER_TEMP/mcp.json" "$CONTAINER:/home/discourse/.config/term-llm/mcp.json"
+docker exec -u root "$CONTAINER" install -d -o agent -g agent \
+  "$HOME_DIR/.config/term-llm/agents" "$HOME_DIR/.config/term-llm/skills"
+docker cp "$AGENT_DIR/." "$CONTAINER:$HOME_DIR/.config/term-llm/agents/discoursebot"
+docker cp "$SKILLS_DIR/." "$CONTAINER:$HOME_DIR/.config/term-llm/skills"
+docker cp "$RUNNER_TEMP/mcp.json" "$CONTAINER:$HOME_DIR/.config/term-llm/mcp.json"
 
-# Inference goes back to the runner. The model named here is ignored by the
-# far end, which answers with whatever provider it was started with.
+# Inference goes back to the runner. The model named here is ignored by the far
+# end, which answers with whatever provider it was started with.
 printf '%s\n' \
   'default_provider: anthropic' \
   'providers:' \
@@ -87,52 +102,39 @@ printf '%s\n' \
   "    base_url: http://host.docker.internal:$SERVE_PORT/ui" \
   "    api_key: $SERVE_TOKEN" \
   > "$RUNNER_TEMP/config.yaml"
-docker cp "$RUNNER_TEMP/config.yaml" "$CONTAINER:/home/discourse/.config/term-llm/config.yaml"
-docker exec -u root "$CONTAINER" chown -R discourse:discourse /home/discourse/.config
+docker cp "$RUNNER_TEMP/config.yaml" "$CONTAINER:$HOME_DIR/.config/term-llm/config.yaml"
+docker exec -u root "$CONTAINER" chown -R agent:agent "$HOME_DIR/.config"
 
+resume=""
 if [ -f "$RUNNER_TEMP/session/issue.db" ]; then
   log "restoring the earlier conversation"
-  docker cp "$RUNNER_TEMP/session/issue.db" "$CONTAINER:/home/discourse/session.db"
-  docker exec -u root "$CONTAINER" chown discourse:discourse /home/discourse/session.db
+  docker cp "$RUNNER_TEMP/session/issue.db" "$CONTAINER:$HOME_DIR/session.db"
+  docker exec -u root "$CONTAINER" chown agent:agent "$HOME_DIR/session.db"
+  resume="--resume"
 fi
 
-log "waiting for postgres"
-for _ in $(seq 1 60); do
-  docker exec -u root "$CONTAINER" pg_isready -q 2>/dev/null && break
-  sleep 2
-done
-
-log "preparing the app"
-as_agent "bundle install --jobs $(nproc) --retry 3"
-as_agent "pnpm install --frozen-lockfile"
-as_agent "bin/rake db:create db:migrate"
-as_agent "RAILS_ENV=test bin/rake db:create db:migrate"
-
 log "running the agent"
-resume=""
-[ -f "$RUNNER_TEMP/session/issue.db" ] && resume="--resume"
-
-docker cp "$RUNNER_TEMP/prompt.txt" "$CONTAINER:/home/discourse/prompt.txt"
+docker cp "$RUNNER_TEMP/prompt.txt" "$CONTAINER:$HOME_DIR/prompt.txt"
 set +e
 as_agent "
   term-llm ask \
     --agent discoursebot \
     --provider anthropic \
-    --session-db /home/discourse/session.db \
+    --session-db $HOME_DIR/session.db \
     $resume \
     --yolo \
     --text \
     --stats \
-    --max-turns 200 \
+    --max-turns 60 \
     --timeout 10m \
-    \"\$(cat /home/discourse/prompt.txt)\" 2>&1
+    \"\$(cat $HOME_DIR/prompt.txt)\" 2>&1
 " | sed -u -e 's/.*\r//'
 status=${PIPESTATUS[0]}
 set -e
 
 mkdir -p "$RUNNER_TEMP/session"
-docker cp "$CONTAINER:/home/discourse/session.db" "$RUNNER_TEMP/session/issue.db" 2>/dev/null || true
-docker cp "$CONTAINER:/home/discourse/finish.json" "$RUNNER_TEMP/finish.json" 2>/dev/null || true
-docker cp "$CONTAINER:/home/discourse/findings.jsonl" "$RUNNER_TEMP/findings.jsonl" 2>/dev/null || true
+docker cp "$CONTAINER:$HOME_DIR/session.db"     "$RUNNER_TEMP/session/issue.db" 2>/dev/null || true
+docker cp "$CONTAINER:$HOME_DIR/finish.json"    "$RUNNER_TEMP/finish.json"      2>/dev/null || true
+docker cp "$CONTAINER:$HOME_DIR/findings.jsonl" "$RUNNER_TEMP/findings.jsonl"   2>/dev/null || true
 
 exit "$status"
