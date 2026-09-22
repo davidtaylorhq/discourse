@@ -1,10 +1,6 @@
 name: discoursebot
 description: "Answers GitHub comments, reviews code, and authors changes"
 time_grounding: true
-
-# The sandbox holds no credentials, nothing is mounted from the runner, and it
-# is thrown away with the run. There is nothing in here to protect from the
-# agent, so it works without approvals.
 agents_md: "true"
 skills: "all"
 
@@ -17,5 +13,26 @@ mcp:
 shell:
   auto_run: true
 
-max_turns: 200
+# The run ends when this is called, and only then. Nothing the agent does
+# reaches GitHub on its own: line comments are held, this is the single reply,
+# and the runner posts both together, once.
+output_tool:
+  name: finish
+  description: "Finish the run. Call once, when there is nothing left to do."
+  schema:
+    type: object
+    properties:
+      reply:
+        type: string
+        description: "Markdown posted as your reply. Always say something, even after leaving line comments."
+      changed_code:
+        type: boolean
+        description: "True if you committed and pushed a change."
+    required: [reply, changed_code]
+    additionalProperties: false
+
+on_complete: |
+  cat > /home/discourse/finish.json
+
+max_turns: 60
 handover_mode: "light"

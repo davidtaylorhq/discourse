@@ -9,7 +9,7 @@ set -Eeuo pipefail
 
 : "${RUNNER_TEMP:?}" "${BRIDGE_IP:?}" "${SSH_PORT:?}" "${SERVE_PORT:?}"
 : "${SERVE_TOKEN:?}" "${CLIENT_KEY:?}" "${HEAD_REF:?}" "${AGENT_DIR:?}"
-: "${GATE_USER:?}"
+: "${GATE_USER:?}" "${SKILLS_DIR:?}"
 : "${TERM_LLM_VERSION:?}"
 
 CONTAINER=discourse_sandbox
@@ -73,6 +73,9 @@ log "installing the agent"
 docker exec -u root "$CONTAINER" install -d -o discourse -g discourse \
   /home/discourse/.config/term-llm/agents
 docker cp "$AGENT_DIR/." "$CONTAINER:/home/discourse/.config/term-llm/agents/discoursebot"
+docker exec -u root "$CONTAINER" install -d -o discourse -g discourse \
+  /home/discourse/.config/term-llm/skills
+docker cp "$SKILLS_DIR/." "$CONTAINER:/home/discourse/.config/term-llm/skills"
 docker cp "$RUNNER_TEMP/mcp.json" "$CONTAINER:/home/discourse/.config/term-llm/mcp.json"
 
 # Inference goes back to the runner. The model named here is ignored by the
@@ -121,7 +124,7 @@ as_agent "
     --text \
     --stats \
     --max-turns 200 \
-    --timeout 30m \
+    --timeout 10m \
     \"\$(cat /home/discourse/prompt.txt)\" 2>&1
 " | sed -u -e 's/.*\r//'
 status=${PIPESTATUS[0]}
@@ -129,5 +132,7 @@ set -e
 
 mkdir -p "$RUNNER_TEMP/session"
 docker cp "$CONTAINER:/home/discourse/session.db" "$RUNNER_TEMP/session/issue.db" 2>/dev/null || true
+docker cp "$CONTAINER:/home/discourse/finish.json" "$RUNNER_TEMP/finish.json" 2>/dev/null || true
+docker cp "$CONTAINER:/home/discourse/findings.jsonl" "$RUNNER_TEMP/findings.jsonl" 2>/dev/null || true
 
 exit "$status"

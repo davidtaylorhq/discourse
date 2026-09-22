@@ -137,6 +137,7 @@ jobs:
           CAN_PUSH: ${{ steps.pr.outputs.can_push }}
           PUSH_BLOCKED_BECAUSE: ${{ steps.pr.outputs.reason }}
           AGENT_DIR: ${{ github.workspace }}/agent/.github/term-llm/discoursebot
+          SKILLS_DIR: ${{ github.workspace }}/agent/.github/term-llm/skills
         run: |
           {
             echo "You are answering a GitHub comment on ${REPO}, issue/PR #${ISSUE_NUMBER}."
@@ -163,6 +164,14 @@ jobs:
             agent/.github/term-llm/mcp.json > "$RUNNER_TEMP/mcp.json"
 
           agent/.github/scripts/run-agent
+
+      - name: Post what the run produced
+        if: always()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+        run: agent/.github/scripts/post-review
 
       - name: Save the conversation
         if: always()
