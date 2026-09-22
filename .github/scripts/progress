@@ -41,22 +41,31 @@ def load():
 
 def main(argv):
     if not argv:
-        print("usage: progress init|set|insert-before ...", file=sys.stderr)
+        print("usage: progress init|set|complete|insert-before ...", file=sys.stderr)
         return 64
 
     cmd, *rest = argv
 
     if cmd == "init":
         steps = [{"key": k, "label": l, "state": s} for k, l, s in (
-            ("started", "Workflow started", "done"),
-            ("agent_started", "Agent started", "active"),
-            ("agent", "Agent running", "pending"),
-            ("responded", "Responded", "pending"),
+            ("sandbox", "Preparing the sandbox", "active"),
+            ("working", "Working", "pending"),
+            ("replying", "Replying", "pending"),
         )]
         publish(steps)
         return 0
 
     steps = load()
+
+    if cmd == "complete":
+        # Whatever is in progress, without the caller having to know which:
+        # a development environment adds a second stretch of work, so the
+        # step that finishes is not always the one that started.
+        for step in steps:
+            if step["state"] == "active":
+                step["state"] = "done"
+        publish(steps)
+        return 0
 
     if cmd == "set":
         key, state = rest[0], rest[1]

@@ -165,8 +165,8 @@ jobs:
           } > "$RUNNER_TEMP/prompt.txt"
 
           agent/.github/scripts/run-agent
-          agent/.github/scripts/progress set agent done
-          agent/.github/scripts/progress set responded active
+          agent/.github/scripts/progress complete
+          agent/.github/scripts/progress set replying active
 
       - name: Post what the run produced
         if: always()
@@ -179,7 +179,7 @@ jobs:
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         run: |
           agent/.github/scripts/post-review
-          agent/.github/scripts/progress set responded done
+          agent/.github/scripts/progress complete
 
       - name: Note that a newer mention took over
         if: cancelled()

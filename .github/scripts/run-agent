@@ -111,8 +111,8 @@ docker exec -u root "$CONTAINER" chown -R agent:agent "$HOME_DIR/.config"
 
 progress() { "$(dirname "$0")/progress" "$@" || true; }
 
-progress set agent_started done
-progress set agent active
+progress complete
+progress set working active
 log "running the agent"
 docker cp "$RUNNER_TEMP/prompt.txt" "$CONTAINER:$HOME_DIR/prompt.txt"
 set +e

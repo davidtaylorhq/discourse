@@ -64,6 +64,6 @@ echo "[dev] migrating" >&2
 in_dev "bin/rake db:create db:migrate" >&2
 in_dev "RAILS_ENV=test bin/rake db:create db:migrate" >&2
 
-"$PROGRESS" set dev_ready done || true
-"$PROGRESS" set agent active || true
+"$PROGRESS" complete || true
+"$PROGRESS" set working_after active || true
 echo "[dev] ready" >&2
