@@ -13,8 +13,11 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 45
     concurrency:
+      # One run per issue. A new mention supersedes whatever the last one was
+      # doing: its answer is about to be out of date anyway, and two agents
+      # pushing to the same branch is worse than a lost answer.
       group: discoursebot-${{ github.event.issue.number }}
-      cancel-in-progress: false
+      cancel-in-progress: true
     permissions:
       contents: write  # the relay forwards the agent's commits; its hooks gate the branch
       pull-requests: write
@@ -170,6 +173,15 @@ jobs:
         run: |
           agent/.github/scripts/post-review
           agent/.github/scripts/progress set responded done
+
+      - name: Note that a newer mention took over
+        if: cancelled()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh api --method PATCH \
+            "/repos/${{ github.repository }}/issues/comments/${{ steps.ack.outputs.id }}" \
+            -f body="Superseded by a newer mention." >/dev/null
 
       - name: Report failure
         if: failure()
