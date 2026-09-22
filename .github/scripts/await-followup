@@ -19,23 +19,27 @@ ALLOWED = {"OWNER", "MEMBER", "COLLABORATOR"}
 MACRO = "@discoursebot"
 
 
-def gh(args):
+CLAIM = "rocket"
+
+
+def gh(args, quiet=False):
     p = subprocess.run(["gh", "api", *args], input="", capture_output=True, text=True)
+    if p.returncode != 0 and not quiet:
+        print(f"gh api {' '.join(args)}: {p.stderr.strip()}", file=sys.stderr)
     return p.stdout if p.returncode == 0 else ""
 
 
-def claimed_ids(repo, issue):
-    """Comment ids some run has already taken responsibility for."""
-    out = set()
-    for page in gh(["--paginate", f"repos/{repo}/issues/{issue}/comments"]).splitlines():
+def is_claimed(repo, comment_id):
+    """A reaction from us means some run has taken this one on."""
+    raw = gh(["--paginate", f"repos/{repo}/issues/comments/{comment_id}/reactions"])
+    for page in raw.splitlines():
         try:
-            for c in json.loads(page):
-                for line in (c.get("body") or "").splitlines():
-                    if line.startswith("<!-- handled:"):
-                        out.add(line.split(":", 1)[1].strip(" ->"))
+            for r in json.loads(page):
+                if r.get("content") == CLAIM and r["user"]["login"].endswith("[bot]"):
+                    return True
         except json.JSONDecodeError:
             pass
-    return out
+    return False
 
 
 def candidates(repo, issue, after):
@@ -58,33 +62,35 @@ def candidates(repo, issue, after):
     return found
 
 
-def claim(repo, comment_id, marker_comment):
-    """Append a marker to our own comment so the run it triggered stands down."""
-    body = gh([f"repos/{repo}/issues/comments/{marker_comment}", "--jq", ".body"]).strip()
-    if f"<!-- handled: {comment_id} -->" in body:
-        return
-    subprocess.run(
-        ["gh", "api", "--method", "PATCH",
-         f"/repos/{repo}/issues/comments/{marker_comment}",
-         "-f", f"body={body}\n<!-- handled: {comment_id} -->"],
+def claim(repo, comment_id):
+    """Take this one on, where the run it triggered can see that we have.
+
+    One call that either works or says why. Editing a comment to leave a note
+    was two calls, and the failure of the second was invisible.
+    """
+    p = subprocess.run(
+        ["gh", "api", "--method", "POST",
+         f"/repos/{repo}/issues/comments/{comment_id}/reactions",
+         "-f", f"content={CLAIM}"],
         input="", capture_output=True, text=True,
     )
+    if p.returncode != 0:
+        print(f"could not claim comment {comment_id}: {p.stderr.strip()}", file=sys.stderr)
+        return False
+    return True
 
 
 def main():
     repo = os.environ["GITHUB_REPOSITORY"]
     issue = os.environ["ISSUE_NUMBER"]
-    marker = os.environ["COMMENT_ID"]
     after = os.environ["SINCE"]
     out = pathlib.Path(os.environ["FOLLOWUP_FILE"])
 
     deadline = time.time() + WINDOW
     while time.time() < deadline:
-        already = claimed_ids(repo, issue)
         for c in candidates(repo, issue, after):
-            if str(c["id"]) in already:
+            if is_claimed(repo, c["id"]) or not claim(repo, c["id"]):
                 continue
-            claim(repo, c["id"], marker)
             out.write_text(json.dumps({
                 "id": c["id"], "author": c["user"]["login"], "body": c["body"],
             }))

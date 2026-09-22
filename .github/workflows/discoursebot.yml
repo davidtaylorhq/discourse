@@ -51,8 +51,8 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           if gh api --paginate \
-            "repos/${{ github.repository }}/issues/${{ github.event.issue.number }}/comments" \
-            --jq '.[].body' | grep -qF "<!-- handled: ${{ github.event.comment.id }} -->"
+            "repos/${{ github.repository }}/issues/comments/${{ github.event.comment.id }}/reactions" \
+            --jq '.[] | select(.content == "rocket") | .user.login' | grep -q '\[bot\]$'
           then
             echo "a run already up is answering this one"
             echo "skip=true" >> "$GITHUB_OUTPUT"
