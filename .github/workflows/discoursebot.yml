@@ -165,9 +165,9 @@ jobs:
             printf '%s\n' "$COMMENT_BODY"
           } > "$RUNNER_TEMP/prompt.txt"
 
-          agent/.github/scripts/progress set agent active
           agent/.github/scripts/run-agent
           agent/.github/scripts/progress set agent done
+          agent/.github/scripts/progress set responded active
 
       - name: Post what the run produced
         if: always()

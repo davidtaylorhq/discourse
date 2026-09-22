@@ -49,6 +49,7 @@ def main(argv):
     if cmd == "init":
         steps = [{"key": k, "label": l, "state": s} for k, l, s in (
             ("started", "Workflow started", "done"),
+            ("agent_started", "Agent started", "active"),
             ("agent", "Agent running", "pending"),
             ("responded", "Responded", "pending"),
         )]

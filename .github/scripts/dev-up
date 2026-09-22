@@ -23,7 +23,9 @@ running && exit 0
 "$PROGRESS" insert-before agent \
   dev_req="Requested development environment" \
   dev_ready="Development environment ready" || true
+"$PROGRESS" set agent pending || true
 "$PROGRESS" set dev_req done || true
+"$PROGRESS" set dev_ready active || true
 
 echo "[dev] starting $IMAGE" >&2
 docker run -d \
@@ -63,4 +65,5 @@ in_dev "bin/rake db:create db:migrate" >&2
 in_dev "RAILS_ENV=test bin/rake db:create db:migrate" >&2
 
 "$PROGRESS" set dev_ready done || true
+"$PROGRESS" set agent active || true
 echo "[dev] ready" >&2
