@@ -7,8 +7,9 @@
 # one, so a run that only answers a question never waits for Ruby.
 set -Eeuo pipefail
 
-: "${RUNNER_TEMP:?}" "${BRIDGE_IP:?}" "${SSH_PORT:?}" "${SERVE_PORT:?}"
-: "${SERVE_TOKEN:?}" "${CLIENT_KEY:?}" "${HEAD_REF:?}" "${AGENT_DIR:?}"
+: "${RUNNER_TEMP:?}" "${BRIDGE_IP:?}" "${SSH_PORT:?}"
+: "${CLIENT_KEY:?}" "${HEAD_REF:?}" "${AGENT_DIR:?}"
+: "${CLAUDE_CODE_OAUTH_TOKEN:?}"
 : "${GATE_USER:?}" "${SKILLS_DIR:?}" "${TERM_LLM_VERSION:?}" "${WORKTREE_VOLUME:?}"
 : "${MCP_TEMPLATE:?}"
 
@@ -29,6 +30,7 @@ as_agent() {
   docker exec -i -u agent -w /src \
     -e HOME="$HOME_DIR" \
     -e GIT_SSH_COMMAND="ssh $SSH_OPTS" \
+    -e CLAUDE_CODE_OAUTH_TOKEN="$CLAUDE_CODE_OAUTH_TOKEN" \
     "$CONTAINER" bash -lc 'export PATH="$HOME/.local/bin:$PATH"; '"$1"
 }
 
@@ -43,7 +45,8 @@ docker exec -u root "$CONTAINER" bash -c '
   set -e
   apt-get update -qq
   apt-get install -y -qq --no-install-recommends \
-    git openssh-client ca-certificates curl jq >/dev/null
+    git openssh-client ca-certificates curl jq nodejs npm >/dev/null
+  npm install -g --silent @anthropic-ai/claude-code >/dev/null 2>&1
   useradd -u 1000 -m -d /home/agent -s /bin/bash agent
   install -d -o agent -g agent -m 0700 /home/agent/.ssh
   chown agent:agent /src
@@ -98,16 +101,6 @@ sed -e "s#__KEY__#$HOME_DIR/.ssh/gate#" \
     "$MCP_TEMPLATE" > "$RUNNER_TEMP/mcp.json"
 docker cp "$RUNNER_TEMP/mcp.json" "$CONTAINER:$HOME_DIR/.config/term-llm/mcp.json"
 
-# Inference goes back to the runner. The model named here is ignored by the far
-# end, which answers with whatever provider it was started with.
-printf '%s\n' \
-  'default_provider: anthropic' \
-  'providers:' \
-  '  anthropic:' \
-  "    base_url: http://host.docker.internal:$SERVE_PORT/ui" \
-  "    api_key: $SERVE_TOKEN" \
-  > "$RUNNER_TEMP/config.yaml"
-docker cp "$RUNNER_TEMP/config.yaml" "$CONTAINER:$HOME_DIR/.config/term-llm/config.yaml"
 docker exec -u root "$CONTAINER" chown -R agent:agent "$HOME_DIR/.config"
 
 log "running the agent"
@@ -116,7 +109,7 @@ set +e
 as_agent "
   term-llm ask \
     --agent discoursebot \
-    --provider anthropic \
+    --provider claude-bin \
     --no-session \
     --yolo \
     --text \

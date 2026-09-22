@@ -12,7 +12,6 @@ STATE="$HOME/.discoursebot"
 RELAY="$RUNNER_TEMP/relay.git"
 PUSHED="$RUNNER_TEMP/relay.pushed"
 SSH_PORT=2222
-SERVE_PORT=8088
 MCP_IMAGE=ghcr.io/github/github-mcp-server:v1.12.2
 WORKTREE_VOLUME=discoursebot-worktree
 POSTGRES_VOLUME=discoursebot-postgres
@@ -74,7 +73,6 @@ chmod +x "$RELAY/hooks/update" "$RELAY/hooks/post-receive"
 
 # ------------------------------------------------------- what the gate needs
 step "writing the gate environment"
-serve_token=$(openssl rand -hex 32)
 cat > "$STATE/env" <<ENV
 export RELAY='$RELAY'
 export MCP_IMAGE='$MCP_IMAGE'
@@ -159,39 +157,12 @@ step "authorized_keys has $(wc -l < "$HOME/.ssh/authorized_keys") line(s), optio
 step "gate is listening on:"
 ss -tln | grep ":$SSH_PORT" >&2 || echo "[host] nothing on $SSH_PORT" >&2
 
-step "installing the claude cli"
-npm install -g @anthropic-ai/claude-code >/dev/null 2>&1
-
-TERM_LLM_SERVE_TOKEN="$serve_token" \
-  nohup term-llm serve api \
-    --provider claude-bin \
-    --host "$bridge" \
-    --port "$SERVE_PORT" \
-    > "$RUNNER_TEMP/serve.log" 2>&1 &
-
-step "waiting for inference on $bridge:$SERVE_PORT"
-ready=false
-for _ in $(seq 1 60); do
-  if curl -fsS -o /dev/null "http://$bridge:$SERVE_PORT/ui/healthz" 2>/dev/null; then
-    ready=true
-    break
-  fi
-  sleep 1
-done
-if [ "$ready" != true ]; then
-  echo "[host] term-llm serve never came up:" >&2
-  cat "$RUNNER_TEMP/serve.log" >&2 || true
-  exit 1
-fi
-
 {
   echo "BRIDGE_IP=$bridge"
   echo "SSH_PORT=$SSH_PORT"
-  echo "SERVE_PORT=$SERVE_PORT"
-  echo "SERVE_TOKEN=$serve_token"
   echo "CLIENT_KEY=$STATE/clientkey"
   echo "GATE_USER=$(id -un)"
   echo "WORKTREE_VOLUME=$WORKTREE_VOLUME"
 } >> "$GITHUB_ENV"
 
-echo "gate on $bridge:$SSH_PORT, inference on $bridge:$SERVE_PORT"
+echo "gate on $bridge:$SSH_PORT"
