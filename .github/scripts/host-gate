@@ -1,0 +1,26 @@
+#!/bin/sh
+# The only thing the sandbox can ask the runner to do.
+#
+# Installed as a forced command in authorized_keys, so this runs whatever the
+# client asked for. It matches on the verb and supplies its own arguments: the
+# client's are discarded, which is what keeps this from being a parsing problem.
+. "$HOME/.discoursebot/env"
+
+case "$SSH_ORIGINAL_COMMAND" in
+  mcp)
+    exec docker run -i --rm \
+      -e GITHUB_PERSONAL_ACCESS_TOKEN \
+      -e GITHUB_TOOLSETS \
+      "$MCP_IMAGE"
+    ;;
+  git-upload-pack*)
+    exec git-upload-pack "$RELAY"
+    ;;
+  git-receive-pack*)
+    exec git-receive-pack "$RELAY"
+    ;;
+  *)
+    echo "discoursebot: not permitted" >&2
+    exit 1
+    ;;
+esac

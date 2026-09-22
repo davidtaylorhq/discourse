@@ -1,16 +1,14 @@
 {
   "servers": {
     "github": {
-      "command": "docker",
+      "command": "ssh",
       "args": [
-        "run",
-        "-i",
-        "--rm",
-        "-e",
-        "GITHUB_PERSONAL_ACCESS_TOKEN",
-        "-e",
-        "GITHUB_TOOLSETS",
-        "ghcr.io/github/github-mcp-server:v1.12.2"
+        "-i", "/home/discourse/.ssh/gate",
+        "-p", "__SSH_PORT__",
+        "-o", "StrictHostKeyChecking=no",
+        "-o", "UserKnownHostsFile=/dev/null",
+        "host.docker.internal",
+        "mcp"
       ]
     }
   }

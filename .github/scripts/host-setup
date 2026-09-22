@@ -1,0 +1,133 @@
+#!/bin/bash
+# Stand up everything the sandbox is allowed to reach: a git relay, an SSH gate
+# in front of it, and an inference endpoint. Every credential stays here.
+set -euo pipefail
+
+: "${RUNNER_TEMP:?}" "${HEAD_REF:?}" "${HEAD_OID:?}" "${GITHUB_REPOSITORY:?}"
+: "${GH_TOKEN:?}" "${CLAUDE_CODE_OAUTH_TOKEN:?}"
+
+STATE="$HOME/.discoursebot"
+RELAY="$RUNNER_TEMP/relay.git"
+PUSHED="$RUNNER_TEMP/relay.pushed"
+SSH_PORT=2222
+SERVE_PORT=8088
+MCP_IMAGE=ghcr.io/github/github-mcp-server:v1.12.2
+
+mkdir -p "$STATE"
+chmod 700 "$STATE"
+
+bridge=$(ip -4 -o addr show docker0 2>/dev/null | awk '{print $4}' | cut -d/ -f1 | head -1)
+: "${bridge:=172.17.0.1}"
+
+# ---------------------------------------------------------------- git relay
+git --git-dir="$RELAY" config core.bare true
+git --git-dir="$RELAY" update-ref "refs/heads/$HEAD_REF" "$HEAD_OID"
+git --git-dir="$RELAY" symbolic-ref HEAD "refs/heads/$HEAD_REF"
+printf '%s' "$HEAD_OID" > "$PUSHED"
+
+cat > "$RELAY/hooks/update" <<HOOK
+#!/bin/sh
+if [ "\$1" != "refs/heads/$HEAD_REF" ]; then
+  echo "discoursebot: only $HEAD_REF may be pushed from the sandbox" >&2
+  exit 1
+fi
+HOOK
+
+# Git ignores what post-receive exits with, so a failed forward has to say so
+# itself or the agent is told its push succeeded when GitHub never saw it.
+cat > "$RELAY/hooks/post-receive" <<HOOK
+#!/bin/bash
+. "$STATE/env"
+while read -r _old new ref; do
+  [ "\$ref" = "refs/heads/$HEAD_REF" ] || continue
+
+  if [ "\${CAN_PUSH:-false}" != true ]; then
+    echo "discoursebot: kept in the sandbox, not sent to GitHub: \${PUSH_BLOCKED_BECAUSE:-pushing is unavailable}"
+    continue
+  fi
+
+  expected=\$(cat "$PUSHED")
+  auth=\$(printf 'x-access-token:%s' "\$GH_TOKEN" | base64 -w0)
+  if git -c http.extraheader="AUTHORIZATION: basic \$auth" \\
+       push --force-with-lease="refs/heads/$HEAD_REF:\$expected" \\
+       "\${RELAY_REMOTE:-https://github.com/$GITHUB_REPOSITORY.git}" \\
+       "\$new:refs/heads/$HEAD_REF" 2>&1
+  then
+    printf '%s' "\$new" > "$PUSHED"
+    echo "discoursebot: pushed \${new:0:12} to $HEAD_REF on GitHub"
+  else
+    echo "discoursebot: GitHub refused the push; the commit exists only in the sandbox"
+    echo "discoursebot: the branch most likely moved since this run started"
+  fi
+done
+HOOK
+chmod +x "$RELAY/hooks/update" "$RELAY/hooks/post-receive"
+
+# ------------------------------------------------------- what the gate needs
+serve_token=$(openssl rand -hex 32)
+cat > "$STATE/env" <<ENV
+export RELAY='$RELAY'
+export MCP_IMAGE='$MCP_IMAGE'
+export GITHUB_PERSONAL_ACCESS_TOKEN='$GH_TOKEN'
+export GH_TOKEN='$GH_TOKEN'
+export GITHUB_TOOLSETS='${GITHUB_TOOLSETS:-pull_requests,issues}'
+export CAN_PUSH='${CAN_PUSH:-false}'
+export PUSH_BLOCKED_BECAUSE='${PUSH_BLOCKED_BECAUSE:-}'
+ENV
+chmod 600 "$STATE/env"
+install -m 0755 "$(dirname "$0")/host-gate" "$STATE/gate"
+
+# --------------------------------------------------------------- the ssh gate
+ssh-keygen -q -t ed25519 -N '' -f "$STATE/hostkey"
+ssh-keygen -q -t ed25519 -N '' -f "$STATE/clientkey" -C discoursebot
+printf 'restrict,command="%s/gate" %s\n' "$STATE" "$(cat "$STATE/clientkey.pub")" \
+  > "$STATE/authorized_keys"
+chmod 600 "$STATE/authorized_keys"
+
+cat > "$STATE/sshd_config" <<CONF
+Port $SSH_PORT
+ListenAddress $bridge
+HostKey $STATE/hostkey
+AuthorizedKeysFile $STATE/authorized_keys
+AllowUsers $(id -un)
+PermitRootLogin no
+PasswordAuthentication no
+KbdInteractiveAuthentication no
+PubkeyAuthentication yes
+UsePAM no
+PrintMotd no
+X11Forwarding no
+AllowTcpForwarding no
+AllowAgentForwarding no
+Subsystem sftp /bin/false
+CONF
+
+sudo /usr/sbin/sshd -f "$STATE/sshd_config" -E "$RUNNER_TEMP/sshd.log"
+
+# ------------------------------------------------------------------ inference
+# The container asks for a model by name and gets whichever one this is
+# configured with; term-llm drops the requested name deliberately. Swapping to
+# another provider is a change here and nowhere else.
+npm install -g @anthropic-ai/claude-code >/dev/null 2>&1
+
+TERM_LLM_SERVE_TOKEN="$serve_token" \
+  nohup term-llm serve api \
+    --provider claude-bin \
+    --host "$bridge" \
+    --port "$SERVE_PORT" \
+    > "$RUNNER_TEMP/serve.log" 2>&1 &
+
+for _ in $(seq 1 60); do
+  curl -fsS -o /dev/null "http://$bridge:$SERVE_PORT/ui/healthz" 2>/dev/null && break
+  sleep 1
+done
+
+{
+  echo "BRIDGE_IP=$bridge"
+  echo "SSH_PORT=$SSH_PORT"
+  echo "SERVE_PORT=$SERVE_PORT"
+  echo "SERVE_TOKEN=$serve_token"
+  echo "CLIENT_KEY=$STATE/clientkey"
+} >> "$GITHUB_ENV"
+
+echo "gate on $bridge:$SSH_PORT, inference on $bridge:$SERVE_PORT"

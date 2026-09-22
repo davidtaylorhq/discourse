@@ -16,7 +16,7 @@ jobs:
       group: discoursebot-${{ github.event.issue.number }}
       cancel-in-progress: false
     permissions:
-      contents: write  # pushing the agent's commits; see the guards on the push step
+      contents: write  # the relay forwards the agent's commits; its hooks gate the branch
       pull-requests: write
       issues: write
       actions: read  # to find the previous run's session artifact
@@ -87,22 +87,25 @@ jobs:
           path: src
           persist-credentials: false
 
-      - name: Serve the branch to the sandbox
+      - name: Stand up the host services
         env:
           HEAD_REF: ${{ steps.pr.outputs.head_ref }}
           HEAD_OID: ${{ steps.pr.outputs.head_oid }}
           CAN_PUSH: ${{ steps.pr.outputs.can_push }}
           PUSH_BLOCKED_BECAUSE: ${{ steps.pr.outputs.reason }}
+          GITHUB_TOOLSETS: pull_requests,issues
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.ANTHROPIC_OAUTH_TOKEN }}
         run: |
-          # `write_file` is bounded by directory and term-llm does not treat
-          # `.git` as special, so leaving a repository in the tree would hand the
-          # agent a way onto the runner: a hook, a `diff.external`, a
-          # `credential.helper`. The repository moves out of the tree entirely
-          # and is served to the container over git's protocol instead, where
-          # the only thing it can send is objects and a ref update.
+          # The checkout exists only to seed the relay; the runner keeps no work
+          # tree. Everything the sandbox can reach is stood up here, and every
+          # credential stays on this side of it.
           mv src/.git "$RUNNER_TEMP/relay.git"
-          agent/.github/scripts/git-relay
+          rm -rf src
+          curl -fsSL https://raw.githubusercontent.com/samsaffron/term-llm/${TERM_LLM_VERSION}/install.sh | sh
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+          export PATH="$HOME/.local/bin:$PATH"
+          agent/.github/scripts/host-setup
 
       - name: Restore the conversation for this issue
         env:
@@ -121,69 +124,28 @@ jobs:
             echo "No earlier conversation; starting fresh."
           fi
 
-      - name: Install tooling
-        run: |
-          npm install -g @anthropic-ai/claude-code &
-          claude_pid=$!
-          curl -fsSL https://raw.githubusercontent.com/samsaffron/term-llm/${TERM_LLM_VERSION}/install.sh | sh &
-          termllm_pid=$!
-          docker pull -q ghcr.io/github/github-mcp-server:v1.12.2 &
-          docker_pid=$!
-          wait $claude_pid
-          wait $termllm_pid
-          wait $docker_pid
-          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
-
-      - name: Configure the agent
-        run: |
-          mkdir -p "$HOME/.config/term-llm/agents"
-          cp agent/.github/term-llm/mcp.json "$HOME/.config/term-llm/mcp.json"
-
-          # Skills are discovered by walking up from the working directory, and a
-          # skill may declare a script that term-llm runs here. The working
-          # directory is the pull request, so discovery stays off.
-          printf '%s\n' \
-            'skills:' \
-            '  include_project_skills: false' \
-            '  include_ecosystem_paths: false' \
-            > "$HOME/.config/term-llm/config.yaml"
-          cp -r agent/.github/term-llm/discoursebot "$HOME/.config/term-llm/agents/"
-
-          # The agent runs `sandbox`, never `docker`. Installing it on PATH from
-          # the default branch keeps it out of reach of the branch being reviewed.
-          install -m 0755 agent/.github/scripts/sandbox "$HOME/.local/bin/sandbox"
-
-          # Agents in the working directory outrank installed ones, so a pull
-          # request carrying this path would otherwise choose its own reviewer.
-          rm -rf src/term-llm-agents
-
-      - name: Run agent
+      - name: Run the agent
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          GITHUB_PERSONAL_ACCESS_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          GITHUB_TOOLSETS: pull_requests,issues
-          SANDBOX_SRC: ${{ github.workspace }}/src
-          HEAD_REF: ${{ steps.pr.outputs.head_ref }}
-          CAN_PUSH: ${{ steps.pr.outputs.can_push }}
-          PUSH_BLOCKED_BECAUSE: ${{ steps.pr.outputs.reason }}
-          CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.ANTHROPIC_OAUTH_TOKEN }}
           COMMENT_BODY: ${{ github.event.comment.body }}
           COMMENT_AUTHOR: ${{ github.event.comment.user.login }}
           ISSUE_NUMBER: ${{ github.event.issue.number }}
           IS_PULL_REQUEST: ${{ github.event.issue.pull_request && 'yes' || 'no' }}
           REPO: ${{ github.repository }}
-        working-directory: src
+          HEAD_REF: ${{ steps.pr.outputs.head_ref }}
+          CAN_PUSH: ${{ steps.pr.outputs.can_push }}
+          PUSH_BLOCKED_BECAUSE: ${{ steps.pr.outputs.reason }}
+          AGENT_DIR: ${{ github.workspace }}/agent/.github/term-llm/discoursebot
         run: |
           {
             echo "You are answering a GitHub comment on ${REPO}, issue/PR #${ISSUE_NUMBER}."
             if [ "$IS_PULL_REQUEST" = "yes" ]; then
-              echo "This is a pull request. The working tree is already checked out at its head commit."
+              echo "This is a pull request, cloned at /src at its head commit."
             else
               echo "This is an issue."
             fi
             echo
             if [ "$CAN_PUSH" = true ]; then
-              echo "Pushing with 'sandbox git push origin HEAD' sends your commits to the pull request branch."
+              echo "Pushing with 'git push origin HEAD' sends your commits to the pull request branch."
             else
               echo "You may commit and push, but nothing reaches GitHub: ${PUSH_BLOCKED_BECAUSE}. Say so if you make changes."
             fi
@@ -195,27 +157,10 @@ jobs:
             printf '%s\n' "$COMMENT_BODY"
           } > "$RUNNER_TEMP/prompt.txt"
 
-          session_db="$RUNNER_TEMP/session/issue-${ISSUE_NUMBER}.db"
-          resume=""
-          if [ -f "$session_db" ]; then
-            resume="--resume"
-          fi
+          sed -e "s/__SSH_PORT__/$SSH_PORT/" \
+            agent/.github/term-llm/mcp.json > "$RUNNER_TEMP/mcp.json"
 
-          # Progress output redraws itself with carriage returns, which a log
-          # renders as one line per frame. Keep only the last state of each line.
-          set -o pipefail
-
-          term-llm ask \
-            --agent discoursebot \
-            --provider claude-bin \
-            --session-db "$session_db" \
-            $resume \
-            --text \
-            --stats \
-            --max-turns 200 \
-            --timeout 30m \
-            --write-dir "$GITHUB_WORKSPACE/src" \
-            "$(cat "$RUNNER_TEMP/prompt.txt")" 2>&1 | sed -u -e 's/.*\r//'
+          agent/.github/scripts/run-agent
 
       - name: Save the conversation
         if: always()

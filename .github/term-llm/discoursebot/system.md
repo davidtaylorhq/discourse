@@ -32,31 +32,24 @@ What you cannot see is anything said while you were not running: comments other 
 
 ## Changing code
 
-Edit files in the working tree with `write_file` and `edit_file`.
-
-Git runs in the container like everything else, so stage and commit through `sandbox`:
-
-    sandbox git status
-    sandbox git diff
-    sandbox git add lib/text_sentinel.rb
-    sandbox git commit -m "..."
+Edit files, run commands, use git. You are in a throwaway container with the repository checked out at `/src`; work there however you like.
 
 Write the commit message the way the repository writes them.
 
-`sandbox git push origin HEAD` then sends your commits to the pull request branch. Only that branch is accepted; a push anywhere else is refused. Push once you have run whatever covers the change and it passed. Do not push work you could not verify, unless the person asked you to; commit it, leave it unpushed, and say why.
+`git push origin HEAD` then sends your commits to the pull request branch. Only that branch is accepted; a push anywhere else is refused. Push once you have run whatever covers the change and it passed. Do not push work you could not verify, unless the person asked you to; commit it, leave it unpushed, and say why.
 
-Run nothing directly. Every command that executes — specs, linters, git, the app itself — goes through `sandbox`, which runs it inside the Discourse dev container against the same working tree:
+Postgres, redis, the gems and the node modules are all ready:
 
-    sandbox bin/rspec spec/lib/text_sentinel_spec.rb
-    sandbox bin/rubocop -a lib/text_sentinel.rb
-    sandbox pnpm lint
+    bin/rspec spec/lib/text_sentinel_spec.rb
+    bin/rubocop -a lib/text_sentinel.rb
+    pnpm lint
 
-The first call boots the container and takes a few minutes; later calls are fast. Run the specs that cover what you changed, not the whole suite.
+Run the specs that cover what you changed, not the whole suite.
 
 A change you have not run is a guess. Say so plainly when you post it, rather than implying you checked.
 
 ## Reading
 
-`pull_request_read` gives you the diff, the files and the existing review comments. Take the diff from there: the checkout is shallow, so `git diff` against a base branch will not work.
+`pull_request_read` gives you the diff, the files and the existing review comments. Take the diff from there: the clone is shallow, so `git diff` against a base branch will not work.
 
-The working tree is at the head commit, so `read_file` and `grep` are the fastest way to read the code around a change.
+The clone is at the head commit, so `read_file` and `grep` are the fastest way to read the code around a change.
