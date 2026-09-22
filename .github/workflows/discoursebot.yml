@@ -82,13 +82,19 @@ jobs:
             echo "reason=" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Check out the code under discussion
-        uses: actions/checkout@v7
-        with:
-          ref: ${{ steps.pr.outputs.ref }}
-          fetch-depth: 1
-          path: src
-          persist-credentials: false
+      - name: Fetch the branch
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          HEAD_REF: ${{ steps.pr.outputs.head_ref }}
+        run: |
+          # Only the sandbox ever reads a work tree, and it clones one for
+          # itself, so nothing here writes the files out.
+          auth=$(printf 'x-access-token:%s' "$GH_TOKEN" | base64 -w0)
+          git init -q --bare "$RUNNER_TEMP/relay.git"
+          git --git-dir="$RUNNER_TEMP/relay.git" \
+            -c http.extraheader="AUTHORIZATION: basic $auth" \
+            fetch -q --depth 1 "${{ github.server_url }}/${{ github.repository }}.git" \
+            "+refs/pull/${{ github.event.issue.number }}/head:refs/heads/$HEAD_REF"
 
       - name: Stand up the host services
         env:
@@ -101,11 +107,8 @@ jobs:
           GITHUB_TOOLSETS: pull_requests,issues
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          # The checkout exists only to seed the relay; the runner keeps no work
-          # tree. Everything the sandbox can reach is stood up here, and every
+          # Everything the sandbox can reach is stood up here, and every
           # credential stays on this side of it.
-          mv src/.git "$RUNNER_TEMP/relay.git"
-          rm -rf src
           curl -fsSL https://raw.githubusercontent.com/samsaffron/term-llm/${TERM_LLM_VERSION}/install.sh | sh
           echo "$HOME/.local/bin" >> "$GITHUB_PATH"
           export PATH="$HOME/.local/bin:$PATH"
