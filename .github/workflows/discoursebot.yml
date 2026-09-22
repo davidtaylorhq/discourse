@@ -25,6 +25,16 @@ jobs:
       TERM_LLM_VERSION: v0.9.54
 
     steps:
+      - name: Check out the agent
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 1
+          sparse-checkout: |
+            .github/term-llm
+            .github/scripts
+          path: agent
+          persist-credentials: false
+
       - name: Say we are on it
         id: ack
         env:
@@ -38,15 +48,14 @@ jobs:
           COMMENT_ID="$id" PROGRESS_FILE="$RUNNER_TEMP/progress.json" \
             agent/.github/scripts/progress init
 
-      - name: Check out the agent
-        uses: actions/checkout@v7
-        with:
-          fetch-depth: 1
-          sparse-checkout: |
-            .github/term-llm
-            .github/scripts
-          path: agent
-          persist-credentials: false
+      - name: Identify this agent
+        id: agent
+        run: |
+          # A conversation recorded against one set of tools cannot be resumed
+          # against another, so what the agent is forms part of its identity.
+          hash=$(find agent/.github/term-llm agent/.github/scripts -type f -exec sha256sum {} + \
+            | sort | sha256sum | cut -c1-12)
+          echo "hash=$hash" >> "$GITHUB_OUTPUT"
 
       - name: Resolve the pull request
         id: pr
@@ -116,7 +125,7 @@ jobs:
       - name: Restore the conversation for this issue
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          ARTIFACT: discoursebot-session-${{ github.event.issue.number }}
+          ARTIFACT: discoursebot-session-${{ github.event.issue.number }}-${{ steps.agent.outputs.hash }}
         run: |
           mkdir -p "$RUNNER_TEMP/session"
           run_id=$(gh api \
@@ -192,7 +201,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: discoursebot-session-${{ github.event.issue.number }}
+          name: discoursebot-session-${{ github.event.issue.number }}-${{ steps.agent.outputs.hash }}
           path: ${{ runner.temp }}/session
           retention-days: 30
           if-no-files-found: ignore
