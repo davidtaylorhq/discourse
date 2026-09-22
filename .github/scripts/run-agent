@@ -18,6 +18,14 @@ SSH_CMD="ssh -i /home/discourse/.ssh/gate -p $SSH_PORT -o StrictHostKeyChecking=
 
 log() { echo "[sandbox] $*" >&2; }
 
+# Whatever goes wrong in here, the reason is usually on the other side of the
+# gate, where only the runner can see it.
+dump_host_log() {
+  echo "[sandbox] --- sshd log ---" >&2
+  sudo cat "$RUNNER_TEMP/sshd.log" 2>/dev/null >&2 || true
+}
+trap dump_host_log ERR
+
 as_agent() {
   docker exec -i -u discourse -w /src \
     -e CI=1 \
