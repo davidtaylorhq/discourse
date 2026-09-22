@@ -1,6 +1,11 @@
 #!/usr/bin/env python3
 """Wait a little to see whether the conversation continues.
 
+Anything said since the comment being answered counts, not merely what arrives
+once the waiting starts. A comment that lands while the agent is working is
+already there when it finishes, and answering it here saves both this run's
+waiting and the cold start of the run it queued.
+
 The sandbox is still up, with the branch cloned and any development
 environment running, so answering a follow-up here costs seconds where a fresh
 run costs a minute. A comment this claims is marked as claimed, and the run it
@@ -95,6 +100,7 @@ def main():
                 continue
             out.write_text(json.dumps({
                 "id": c["id"], "author": c["user"]["login"], "body": c["body"],
+                "created_at": c["created_at"],
             }))
             print(f"picked up a follow-up from {c['user']['login']}", file=sys.stderr)
             return 0

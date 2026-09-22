@@ -233,9 +233,12 @@ jobs:
           # nothing else, where a fresh mention costs a minute of setup first.
           waiting=waiting
           round=1
+          # Measured from the comment being answered, so anything said while the
+          # agent was working is waiting here rather than needing its own run.
+          since=${{ toJSON(github.event.comment.created_at) }}
           while true; do
             agent/.github/scripts/progress set "$waiting" active
-            if ! SINCE=$(date -u +%Y-%m-%dT%H:%M:%SZ) agent/.github/scripts/await-followup; then
+            if ! SINCE="$since" agent/.github/scripts/await-followup; then
               agent/.github/scripts/progress complete
               break
             fi
@@ -243,6 +246,7 @@ jobs:
 
             author=$(jq -r .author "$RUNNER_TEMP/followup.json")
             body=$(jq -r .body "$RUNNER_TEMP/followup.json")
+            since=$(jq -r .created_at "$RUNNER_TEMP/followup.json")
 
             round=$((round + 1))
             working="working_$round"
