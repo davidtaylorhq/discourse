@@ -2,10 +2,10 @@
 """Find the mentions nobody has taken, and take them.
 
 A run answers whatever is outstanding rather than the comment that happened to
-start it. GitHub keeps one pending run per issue and cancels the rest, so a
-comment whose own run was cancelled has nothing else looking for it; answering
-oldest-first means the next run to start picks it up, whichever comment that
-run was started by.
+start it. Runs on an issue are queued one at a time, and GitHub holds only one
+in the queue: a third arrival displaces the second, whose comment then has
+nothing looking for it. Answering oldest-first means the next run to start
+picks it up, whichever comment started that run.
 
 Everything already waiting is taken together and answered in one turn. People
 correct themselves within seconds of asking, and answering the first comment

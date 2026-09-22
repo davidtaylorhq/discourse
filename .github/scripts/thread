@@ -16,9 +16,9 @@ WIDTH = 800
 # but the agent should know whose words carry weight.
 TRUSTED = {"OWNER", "MEMBER", "COLLABORATOR"}
 
-# The bot's own bookkeeping is not conversation.
-NOISE = ("Superseded by a newer mention.", "The run failed.", "Starting…")
-CHECKLIST = ("✅", "⏳", "⬜")
+# The bot's own bookkeeping is not conversation. The checklist is recognised by
+# how it opens, which is also what it is: a sentence saying work has started.
+NOISE = ("Superseded by a newer mention.", "The run failed.", "Starting…", "On it!")
 FOOTER_AT = "<sub>:robot:"
 
 
@@ -41,9 +41,7 @@ def comments(repo, issue):
 
 def useful(c):
     body = (c.get("body") or "").strip()
-    if not body or body.startswith(NOISE) or body[0] in CHECKLIST:
-        return False
-    return True
+    return bool(body) and not body.startswith(NOISE)
 
 
 def main():
@@ -69,7 +67,7 @@ def main():
         if len(body) > WIDTH:
             body = body[:WIDTH] + " […]"
         who = c["user"]["login"]
-        if who.endswith("[bot]"):
+        if who == os.environ.get("BOT_LOGIN", "github-actions[bot]"):
             who = "you"
         elif c.get("author_association") not in TRUSTED:
             who = f"{who} (cannot write to this repository)"

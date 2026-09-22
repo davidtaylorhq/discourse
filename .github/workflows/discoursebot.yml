@@ -62,9 +62,9 @@ jobs:
           ISSUE_NUMBER: ${{ github.event.issue.number }}
           MENTION_FILE: ${{ runner.temp }}/mention.json
         run: |
-          # Not necessarily the comment that started this run: GitHub keeps one
-          # pending run per issue and cancels the rest, so a comment whose run
-          # was cancelled has nothing else looking for it.
+          # Not necessarily the comment that started this run: only one run is
+          # queued per issue, so a comment displaced from that queue has
+          # nothing else looking for it.
           if agent/.github/scripts/next-mention; then
             echo "mine=true" >> "$GITHUB_OUTPUT"
           else
