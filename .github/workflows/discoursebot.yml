@@ -50,10 +50,17 @@ jobs:
           curl -fsSL https://raw.githubusercontent.com/samsaffron/term-llm/${TERM_LLM_VERSION}/install.sh | sh
           echo "$HOME/.local/bin" >> "$GITHUB_PATH"
 
-      - name: Configure the GitHub MCP server
+      - name: Configure the agent
         run: |
-          mkdir -p "$HOME/.config/term-llm"
-          cp .github/term-llm/mcp.json "$HOME/.config/term-llm/mcp.json"
+          # Read the agent and its allowlist from the default branch: a pull
+          # request must not be able to rewrite the rules it is reviewed under.
+          mkdir -p "$HOME/.config/term-llm" "$RUNNER_TEMP/discoursebot"
+          git show origin/${{ github.event.repository.default_branch }}:.github/term-llm/mcp.json \
+            > "$HOME/.config/term-llm/mcp.json"
+          for f in agent.yaml system.md; do
+            git show origin/${{ github.event.repository.default_branch }}:.github/term-llm/discoursebot/$f \
+              > "$RUNNER_TEMP/discoursebot/$f"
+          done
           docker pull -q ghcr.io/github/github-mcp-server:v1.12.2
 
       - name: Run agent
@@ -85,7 +92,7 @@ jobs:
 
           set -o pipefail
           term-llm ask \
-            --agent .github/term-llm/discoursebot \
+            --agent "$RUNNER_TEMP/discoursebot" \
             --provider claude-bin \
             --no-session \
             --text \
