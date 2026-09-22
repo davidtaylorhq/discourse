@@ -25,9 +25,9 @@ import time
 CLAIM = "eyes"
 ALLOWED = {"OWNER", "MEMBER", "COLLABORATOR"}
 MACRO = "@discoursebot"
-# Old enough that nobody is still waiting for an answer, and a backlog from a
-# long outage should stay unanswered rather than all arrive at once.
-MAX_AGE_HOURS = int(os.environ.get("MAX_COMMENT_AGE_HOURS", "6"))
+# Old enough that nobody is still waiting for an answer. Anything further back
+# is a backlog, and answering a backlog at once is worse than leaving it.
+MAX_AGE_HOURS = int(os.environ.get("MAX_COMMENT_AGE_HOURS", "1"))
 WINDOW = int(os.environ.get("FOLLOWUP_WINDOW", "60"))
 
 
