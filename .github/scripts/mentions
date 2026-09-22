@@ -15,10 +15,6 @@ def main():
     if os.environ.get("IDS_ONLY"):
         print(" ".join(str(m["id"]) for m in mentions))
         return 0
-    if os.environ.get("AUTHOR_ONLY"):
-        print(mentions[-1]["author"])
-        return 0
-
     if len(mentions) > 1:
         print(f"{len(mentions)} comments are waiting. Where they disagree, the last one wins.\n")
     for m in mentions:
