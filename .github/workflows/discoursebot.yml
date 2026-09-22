@@ -37,7 +37,6 @@ jobs:
 
     steps:
       - name: Check out the agent
-        if: steps.mine.outputs.mine == 'true'
         uses: actions/checkout@v7
         with:
           # The same commit the workflow itself came from. Left to default this
@@ -278,11 +277,11 @@ jobs:
           done
 
       - name: Show what happened behind the gate
-        if: failure()
+        if: failure() && steps.mine.outputs.mine == 'true'
         run: cat "$RUNNER_TEMP/dev-up.log" 2>/dev/null || echo "the development environment was never asked for"
 
       - name: Note that a newer mention took over
-        if: cancelled()
+        if: cancelled() && steps.mine.outputs.mine == 'true'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
@@ -291,7 +290,7 @@ jobs:
             -f body="Superseded by a newer mention." >/dev/null
 
       - name: Report failure
-        if: failure()
+        if: failure() && steps.mine.outputs.mine == 'true'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
