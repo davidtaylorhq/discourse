@@ -17,6 +17,7 @@ import sys
 # One drawing in three states: the same ring throughout, with a gap that turns
 # while something is happening and a check once it is done. Greens and oranges
 # that hold up on either background, so one file each rather than a pair.
+OPENING = "On it!"
 ASSETS = "https://raw.githubusercontent.com/{repo}/{ref}/.github/assets"
 MARK = {
     "done": ("mark-done.svg", "done"),
@@ -38,7 +39,7 @@ def render(steps):
         mark = f'<img src="{assets}/{name}" width="13" height="13" alt="{alt}">'
         lines.append(f"{mark} {s['label']}")
     run = os.environ.get("RUN_URL", "")
-    body = "\n".join(lines)
+    body = f"{OPENING}\n\n" + "\n".join(lines)
     return f"{body}\n\n<sub>[Run log]({run})</sub>" if run else body
 
 
