@@ -162,6 +162,24 @@ RSpec.describe TextSentinel do
     end
   end
 
+  describe "#blank?" do
+    it "returns true for a nil string" do
+      expect(TextSentinel.new(nil)).to be_blank
+    end
+
+    it "returns true for an empty string" do
+      expect(TextSentinel.new("")).to be_blank
+    end
+
+    it "returns true for a whitespace-only string" do
+      expect(TextSentinel.new("   \n\t  ")).to be_blank
+    end
+
+    it "returns false for a string with content" do
+      expect(TextSentinel.new("hello")).not_to be_blank
+    end
+  end
+
   describe "title_sentinel" do
     it "uses a sensible min entropy value when min title length is less than title_min_entropy" do
       SiteSetting.min_topic_title_length = 3
