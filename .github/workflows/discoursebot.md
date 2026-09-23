@@ -10,7 +10,15 @@ on:
     name: discoursebot
   reaction: "eyes"
 
-permissions: read-all
+permissions:
+  contents: read
+  issues: read
+  pull-requests: read
+  discussions: read
+  actions: read
+  # Bills inference to the organisation through the Actions token, so no
+  # personal access token is needed.
+  copilot-requests: write
 
 network: defaults
 
