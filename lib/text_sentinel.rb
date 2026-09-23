@@ -42,7 +42,7 @@ class TextSentinel
   end
 
   def blank?
-    text.empty?
+    @text.blank?
   end
 
   def valid?
