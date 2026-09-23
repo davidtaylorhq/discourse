@@ -1,0 +1,8 @@
+environments:
+  - name: rails
+    description: Ruby, the database and the Rails app. Specs, migrations, rubocop, annotations.
+    image: discourse/discourse_dev:release
+    cmd: /sbin/boot
+    user: discourse
+    mount: /src
+    setup: .github/quartermaster/setup
