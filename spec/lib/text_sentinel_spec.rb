@@ -78,12 +78,17 @@ RSpec.describe TextSentinel do
 
       # scaled entropy = 15 * (20 / 10) = 30, which exceeds min_length (20),
       # so it's capped to 20 * ENTROPY_SCALE (0.7) = 14
-      expect(
-        TextSentinel.body_sentinel("abcdefghijklmn", private_message: true),
-      ).to be_valid # 14 unique chars
-      expect(
-        TextSentinel.body_sentinel("abcdefghijklm", private_message: true),
-      ).not_to be_valid # 13 unique chars
+      expect(TextSentinel.body_sentinel("abcdefghijklmn", private_message: true)).to be_valid # 14 unique chars
+      expect(TextSentinel.body_sentinel("abcdefghijklm", private_message: true)).not_to be_valid # 13 unique chars
+    end
+
+    it "caps entropy for public posts when it exceeds min_length" do
+      SiteSetting.min_post_length = 20
+      SiteSetting.body_min_entropy = 30
+
+      # entropy (30) exceeds min_length (20), so it's capped to 20 * ENTROPY_SCALE (0.7) = 14
+      expect(TextSentinel.body_sentinel("abcdefghijklmn")).to be_valid # 14 unique chars
+      expect(TextSentinel.body_sentinel("abcdefghijklm")).not_to be_valid # 13 unique chars
     end
   end
 
@@ -182,6 +187,14 @@ RSpec.describe TextSentinel do
       SiteSetting.min_topic_title_length = 3
       SiteSetting.title_min_entropy = 10
       expect(TextSentinel.title_sentinel("Hey")).to be_valid
+    end
+
+    it "uses title_min_entropy directly when min title length exceeds it" do
+      SiteSetting.min_topic_title_length = 20
+      SiteSetting.title_min_entropy = 10
+
+      expect(TextSentinel.title_sentinel("abcdefghij")).to be_valid # 10 unique chars
+      expect(TextSentinel.title_sentinel("abcdefghi")).not_to be_valid # 9 unique chars
     end
   end
 
