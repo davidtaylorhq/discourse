@@ -1,0 +1,72 @@
+#!/bin/bash
+# Discourse's development environment for the agent.
+#
+# `up` starts it and `exec` runs a command in it, reading that command on
+# stdin. `WORKTREE_VOLUME` holds the checkout the agent has been editing, so
+# mounting it is what makes its changes visible here.
+set -euo pipefail
+
+CONTAINER=discourse_dev
+IMAGE=discourse/discourse_dev:release
+POSTGRES_VOLUME=discourse-agent-postgres
+
+running() {
+  [ "$(docker inspect -f '{{.State.Running}}' "$CONTAINER" 2>/dev/null || echo false)" = true ]
+}
+
+in_dev() {
+  docker exec -i -u discourse -w /src -e CI=1 "$CONTAINER" bash -lc "$1" </dev/null
+}
+
+up() {
+  if running; then
+    return 0
+  fi
+
+  docker volume create "$POSTGRES_VOLUME" >/dev/null
+  echo "starting $IMAGE"
+  docker run -d \
+    --name "$CONTAINER" \
+    --hostname discourse \
+    -v "$WORKTREE_VOLUME:/src" \
+    -v "$POSTGRES_VOLUME:/shared/postgres_data" \
+    "$IMAGE" /sbin/boot >/dev/null
+
+  # The sandbox writes the work tree as uid 1000; whatever this image calls
+  # that user has to agree, or neither side can read what the other wrote.
+  docker exec -u root "$CONTAINER" bash -c '
+    set -e
+    [ "$(id -u discourse)" = 1000 ] || {
+      usermod -u 1000 discourse
+      groupmod -g 1000 discourse
+      chown -R 1000:1000 /home/discourse
+    }
+  '
+
+  echo "waiting for postgres"
+  for _ in $(seq 1 60); do
+    docker exec -u root "$CONTAINER" pg_isready -q 2>/dev/null && break
+    sleep 2
+  done
+
+  echo "installing gems"
+  in_dev "bundle install --jobs $(nproc) --retry 3"
+  echo "installing node modules"
+  in_dev "pnpm install --frozen-lockfile"
+  echo "migrating"
+  in_dev "bin/rake db:create db:migrate"
+  in_dev "RAILS_ENV=test bin/rake db:create db:migrate"
+}
+
+case "${1:-}" in
+  up)
+    up
+    ;;
+  exec)
+    exec docker exec -i -u discourse -w /src -e CI=1 "$CONTAINER" bash -l
+    ;;
+  *)
+    echo "usage: dev up|exec" >&2
+    exit 1
+    ;;
+esac
