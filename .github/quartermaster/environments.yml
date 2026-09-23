@@ -1,6 +1,8 @@
 environments:
-  - name: rails
-    description: Ruby, the database and the Rails app. Specs, migrations, rubocop, annotations.
+  - name: discourse_dev
+    description: >-
+      The Discourse development environment: Ruby, node, postgres and redis.
+      Specs, rubocop, prettier, lint, migrations and the rails console.
     image: discourse/discourse_dev:release
     cmd: /sbin/boot
     user: discourse
