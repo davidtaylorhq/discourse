@@ -104,6 +104,7 @@ if backport_versions.empty?
 end
 
 results = []
+conflicts = []
 
 backport_versions.each do |version|
   release_branch = "release/#{version}"
@@ -144,6 +145,7 @@ backport_versions.each do |version|
   result = run("git", "cherry-pick", cherry_pick_range, allow_failure: true)
 
   unless result.success
+    conflicts << version unless run("git", "diff", "--name-only", "--diff-filter=U").stdout.empty?
     puts "Failed to backport to #{version}:\n#{result.stderr}"
     results << {
       version: version,
@@ -258,5 +260,23 @@ end
 
 comment_lines << "No backports were attempted." if successful.empty? && failed.empty?
 
-gh("pr", "comment", pr_number, "--body", comment_lines.join("\n"))
+result_url =
+  gh(
+    "api",
+    "repos/#{repo}/issues/#{pr_number}/comments",
+    "--method",
+    "POST",
+    "-f",
+    "body=#{comment_lines.join("\n")}",
+    "--jq",
+    ".html_url",
+  ).stdout
+
+if ENV["GITHUB_OUTPUT"]
+  File.open(ENV["GITHUB_OUTPUT"], "a") do |file|
+    file.puts "conflicts=#{conflicts.any?}"
+    file.puts "conflict_versions=#{conflicts.join(", ")}"
+    file.puts "result_url=#{result_url}"
+  end
+end
 puts "\nBackport complete!"
