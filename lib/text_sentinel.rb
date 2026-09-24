@@ -11,18 +11,19 @@ class TextSentinel
   end
 
   def self.body_sentinel(text, opts = {})
+    min_length =
+      if opts[:private_message]
+        SiteSetting.min_personal_message_post_length
+      else
+        SiteSetting.min_post_length
+      end
+
     entropy = SiteSetting.body_min_entropy
     if opts[:private_message]
-      scale_entropy =
-        SiteSetting.min_personal_message_post_length.to_f / SiteSetting.min_post_length.to_f
-      entropy = (entropy * scale_entropy).to_i
-      entropy =
-        (SiteSetting.min_personal_message_post_length.to_f * ENTROPY_SCALE).to_i if entropy >
-        SiteSetting.min_personal_message_post_length
-    else
-      entropy = (SiteSetting.min_post_length.to_f * ENTROPY_SCALE).to_i if entropy >
-        SiteSetting.min_post_length
+      entropy = (entropy * (min_length.to_f / SiteSetting.min_post_length.to_f)).to_i
     end
+    entropy = (min_length.to_f * ENTROPY_SCALE).to_i if entropy > min_length
+
     TextSentinel.new(text, min_entropy: entropy)
   end
 
