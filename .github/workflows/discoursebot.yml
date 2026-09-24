@@ -17,8 +17,13 @@ jobs:
       contents: write
       pull-requests: write
       issues: write
+      actions: read
+      checks: read
+      statuses: read
     with:
       mention: '@discoursebot'
     secrets:
+      app-id: ${{ secrets.DISCOURSEBOT_APP_ID }}
+      app-private-key: ${{ secrets.DISCOURSEBOT_APP_PRIVATE_KEY }}
       provider-env: |
         CLAUDE_CODE_OAUTH_TOKEN=${{ secrets.ANTHROPIC_OAUTH_TOKEN }}
