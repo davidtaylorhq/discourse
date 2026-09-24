@@ -12,6 +12,8 @@ The online home for your community.
 
 Discourse is a 100% open-source community platform for those who want complete control over how and where their site is run.
 
+<!-- test content added for PR #314 verification, safe to remove -->
+
 Our platform has been battle-tested for over a decade and continues to evolve to meet users’ needs for a powerful community platform. 
 
 **With Discourse, you can:**
