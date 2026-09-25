@@ -22,6 +22,7 @@ jobs:
       statuses: read
     with:
       mention: '@discoursebot'
+      instructions: .github/workflow-agent/instructions.md
     secrets:
       app-id: ${{ secrets.DISCOURSEBOT_APP_ID }}
       app-private-key: ${{ secrets.DISCOURSEBOT_APP_PRIVATE_KEY }}
