@@ -26,8 +26,10 @@ jobs:
       mention: '@discoursebot'
       provider: claude-bin:opus
       instructions: .github/workflow-agent/instructions.md
+      attachment-repository: davidtaylorhq/workflow-agent-assets
     secrets:
       app-id: ${{ secrets.DISCOURSEBOT_APP_ID }}
       app-private-key: ${{ secrets.DISCOURSEBOT_APP_PRIVATE_KEY }}
+      attachment-upload-token: ${{ secrets.ATTACHMENT_UPLOAD_TOKEN }}
       provider-env: |
         CLAUDE_CODE_OAUTH_TOKEN=${{ secrets.ANTHROPIC_OAUTH_TOKEN }}

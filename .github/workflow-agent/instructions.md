@@ -4,6 +4,8 @@ For completed changes, reply in one or two short sentences: state the outcome an
 
 For example: "Fixed and pushed the formatting correction. Prettier now passes."
 
+For screenshots, read `.skills/discourse-response-screenshots/SKILL.md`: capture with a temporary system spec, upload with `upload_image`, and embed the URL in your response.
+
 # Code reviews
 
 When asked to review a PR, focus on functional blockers and security vulnerabilities introduced or worsened by the change. Investigate potential findings in the surrounding code and relevant callers before reporting them. Explain a concrete scenario that fails, why it fails, and the consequence. Do not report hypothetical problems without supporting evidence.

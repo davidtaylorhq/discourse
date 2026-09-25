@@ -85,6 +85,7 @@ jobs:
       mention: '@discoursebot'
       provider: claude-bin:opus
       instructions: .github/workflow-agent/instructions.md
+      attachment-repository: davidtaylorhq/workflow-agent-assets
       allowed-branches: 'backport/[0-9]+\.[0-9]+/${{ github.event.issue.number }}'
       task: >-
         Resolve the cherry-pick conflicts for versions ${{ needs.backport.outputs.conflict_versions }}
@@ -98,5 +99,6 @@ jobs:
     secrets:
       app-id: ${{ secrets.DISCOURSEBOT_APP_ID }}
       app-private-key: ${{ secrets.DISCOURSEBOT_APP_PRIVATE_KEY }}
+      attachment-upload-token: ${{ secrets.ATTACHMENT_UPLOAD_TOKEN }}
       provider-env: |
         CLAUDE_CODE_OAUTH_TOKEN=${{ secrets.ANTHROPIC_OAUTH_TOKEN }}
