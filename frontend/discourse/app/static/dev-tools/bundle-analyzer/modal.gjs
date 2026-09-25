@@ -38,7 +38,7 @@ export default class BundleAnalyzerModal extends Component {
 
     // A plugin report only exists once plugins have been compiled, and its
     // absence should not take the core report down with it.
-    this.plugins = await this.#fetch("discourse/bundle-analysis-plugins").then(
+    this.plugins = await this.#fetch("discourse/bundle-analyis-plugins").then(
       (data) => data && this.#prepare(new PluginsAnalysis(data)),
       (e) => {
         this.pluginError = e.message;
