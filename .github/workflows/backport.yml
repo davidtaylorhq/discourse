@@ -83,6 +83,7 @@ jobs:
       statuses: read
     with:
       mention: '@discoursebot'
+      provider: claude-bin:opus
       instructions: .github/workflow-agent/instructions.md
       allowed-branches: 'backport/[0-9]+\.[0-9]+/${{ github.event.issue.number }}'
       task: >-
