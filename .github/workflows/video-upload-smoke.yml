@@ -3,9 +3,6 @@ name: Video upload smoke test
 on:
   workflow_dispatch:
     inputs:
-      mp4:
-        description: Base64-encoded MP4 recording
-        required: true
       webm:
         description: Base64-encoded WebM recording
         required: true
@@ -20,20 +17,19 @@ jobs:
       - uses: actions/checkout@v7
         with:
           repository: davidtaylorhq/workflow-agent
-          ref: 8d9a81b
+          ref: 44f8e76165c054e9ab71107f5c0c07f93fd2e4d6
           persist-credentials: false
       - uses: actions/setup-node@v4
         with:
           node-version: 22
       - name: Prepare recordings in the sandbox
         env:
-          MP4: ${{ inputs.mp4 }}
           WEBM: ${{ inputs.webm }}
         run: |
           mkdir -p "$RUNNER_TEMP/captures"
           node --input-type=module <<'JS'
           import { writeFileSync } from "node:fs";
-          for (const extension of ["mp4", "webm"]) {
+          for (const extension of ["webm"]) {
             writeFileSync(`${process.env.RUNNER_TEMP}/captures/menu.${extension}`,
               Buffer.from(process.env[extension.toUpperCase()], "base64"));
           }
@@ -41,14 +37,14 @@ jobs:
           docker run -d --name workflow-agent-sandbox \
             -v "$RUNNER_TEMP/captures:/src:ro" alpine sleep 300
           docker exec workflow-agent-sandbox adduser -D agent
-      - name: Upload both video formats with the production tool
+      - name: Upload the WebM with the production tool
         env:
           ATTACHMENT_REPOSITORY: davidtaylorhq/workflow-agent-assets
           ATTACHMENT_UPLOAD_TOKEN: ${{ secrets.ATTACHMENT_UPLOAD_TOKEN }}
         run: |
           node --experimental-strip-types --input-type=module <<'JS'
           import { uploadImage } from "./lib/upload-image.ts";
-          for (const extension of ["mp4", "webm"]) {
+          for (const extension of ["webm"]) {
             const result = await uploadImage({ path: `/src/menu.${extension}` });
             console.log(`${extension}: ${result.url}`);
           }
