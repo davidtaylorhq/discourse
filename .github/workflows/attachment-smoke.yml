@@ -71,7 +71,7 @@ jobs:
           print(f'Testing a real Playwright trace ZIP: {len(trace)} bytes')
           query = urllib.parse.urlencode({
               'name': 'playwright-trace-test.zip',
-              'content_type': 'application/zip',
+              'content_type': 'application/x-zip-compressed',
               'repository_id': repo['id'],
           })
           asset = request(f'https://uploads.github.com/user-attachments/assets?{query}', pat, trace, 'application/octet-stream')
