@@ -105,7 +105,7 @@ RSpec.describe "script/backport.rb" do
     File.read(outputs).lines.to_h { |line| line.strip.split("=", 2) }
   end
 
-  it "reports only conflicted targets and preserves the manual failure instructions" do
+  it "announces the agent handoff for conflicted targets and collapses manual instructions" do
     result = run_backport(conflict: true)
 
     expect(result).to eq(
@@ -115,8 +115,10 @@ RSpec.describe "script/backport.rb" do
     )
     expect(File.read(summary)).to include(
       "Successful backports",
-      "Failed backports",
+      "Starting agent-based backport now for **2026.5**",
+      "<details>\n<summary>2026.5: error details and manual instructions</summary>",
       "To resolve manually:",
+      "</details>",
     )
     expect(git(remote, "show", "backport/2026.4/123:file")).to eq("upstream fix")
   end
@@ -131,6 +133,10 @@ RSpec.describe "script/backport.rb" do
       "conflicts" => "false",
       "conflict_versions" => "",
     )
-    expect(File.read(summary)).to include("Failed backports", "pre-receive hook declined")
+    expect(File.read(summary)).to include(
+      "Backports needing attention",
+      "pre-receive hook declined",
+    )
+    expect(File.read(summary)).not_to include("Starting agent-based backport")
   end
 end

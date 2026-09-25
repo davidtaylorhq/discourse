@@ -219,7 +219,11 @@ end
 successful = results.select { |r| r[:success] }
 failed = results.reject { |r| r[:success] }
 
-comment_lines = ["## Backport Results\n"]
+comment_lines = ["## Backport results\n"]
+
+if conflicts.any?
+  comment_lines << "Starting agent-based backport now for **#{conflicts.join(", ")}** to resolve cherry-pick conflicts.\n"
+end
 
 if successful.any?
   comment_lines << "### Successful backports"
@@ -228,7 +232,7 @@ if successful.any?
 end
 
 if failed.any?
-  comment_lines << "### Failed backports"
+  comment_lines << "### Backports needing attention"
   failed.each do |r|
     if r[:cherry_pick_range]
       gh_create =
@@ -236,7 +240,9 @@ if failed.any?
           "--title #{bash_quote(r[:backport_title])} --body #{bash_quote(r[:backport_body])}"
 
       comment_lines << <<~MSG
-        #### #{r[:version]}
+        <details>
+        <summary>#{r[:version]}: error details and manual instructions</summary>
+
         ```
         #{r[:error]}
         ```
@@ -251,6 +257,8 @@ if failed.any?
         git push -f #{repo_url} #{r[:backport_branch]}:#{r[:backport_branch]}
         #{gh_create}
         ```
+
+        </details>
       MSG
     else
       comment_lines << "- **#{r[:version]}**: #{r[:error]}"
