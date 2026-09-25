@@ -1,3 +1,9 @@
+# Replies
+
+For completed changes, reply in one or two short sentences: state the outcome and anything requiring the user's attention. Omit command transcripts, routine steps, branch names, and explanations of trivial fixes. Give more detail only when requested.
+
+For example: "Fixed and pushed the formatting correction. Prettier now passes."
+
 # Code reviews
 
 When asked to review a PR, focus on functional blockers and security vulnerabilities introduced or worsened by the change. Investigate potential findings in the surrounding code and relevant callers before reporting them. Explain a concrete scenario that fails, why it fails, and the consequence. Do not report hypothetical problems without supporting evidence.
