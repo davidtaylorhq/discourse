@@ -41,6 +41,10 @@ class TextSentinel
     @entropy ||= @text.strip.bytes.uniq.size
   end
 
+  def blank?
+    text.empty?
+  end
+
   def valid?
     @text.present? && seems_meaningful? && seems_pronounceable? && seems_unpretentious? &&
       seems_quiet?
