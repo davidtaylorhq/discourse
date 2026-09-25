@@ -6,7 +6,15 @@ Use a temporary system spec with representative data and the existing page objec
 require_relative "../../.github/workflow-agent/hidpi"
 ```
 
-Run the spec with `dev discourse_dev bin/rspec spec/system/<capture>_spec.rb` and a shell timeout of 600 seconds. Build frontend assets with `dev discourse_dev pnpm build` when they are missing or stale.
+Prepare dependencies and the test database as described by the `discourse_dev` environment. Before the first capture, install Chromium **and its system libraries** inside that environment:
+
+```sh
+dev discourse_dev pnpm exec playwright install --with-deps --no-shell chromium
+```
+
+`pnpm playwright-install` installs the browser only, leaving the required system libraries missing in a fresh container.
+
+Build frontend assets with `dev discourse_dev pnpm build` when missing or stale, then run `dev discourse_dev bin/rspec spec/system/<capture>_spec.rb` with a shell timeout of 600 seconds. Keep command failures visible: use `bash -e -o pipefail -c` when combining setup commands or piping spec output.
 
 - **Screenshots:** save a PNG under `tmp/agent-screenshots/` with `page.save_screenshot`.
 - **Videos:** add `video: true` to the spec. Enable animations with `RSpec.configure { |config| config.before(:suite) { Capybara.disable_animation = false } }`. After the spec finishes, use `tmp/capybara/*-screenrecord.webm`.
