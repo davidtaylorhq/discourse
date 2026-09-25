@@ -112,7 +112,7 @@ class MetadataController < ApplicationController
       ],
     }
 
-    logo = SiteSetting.site_manifest_icon_url
+    logo = SiteSetting.site_manifest_icon_url.presence
     if logo
       icon_entry = {
         src: UrlHelper.absolute(logo),
