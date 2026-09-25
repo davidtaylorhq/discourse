@@ -33,7 +33,7 @@ module("Unit | Lib | escape-regexp", function () {
     const input = "C:\\reports\\$draft.txt";
     const pattern = new RegExp(`^${escapeRegExp(input)}$`);
 
-    assert.true( pattern.test(input), "matches a path containing backslashes" );
+    assert.true(pattern.test(input), "matches a path containing backslashes");
     assert.false(
       pattern.test("C:reports$draft.txt"),
       "requires the literal backslashes"
