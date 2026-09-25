@@ -8,4 +8,8 @@ Post each finding with `line_comment` on the most relevant changed line. Keep co
 
 Skip style preferences, optional refactors, requests for explanatory comments, and speculative performance improvements. Missing tests alone are not a finding. Do not describe the PR, praise the implementation, or invent findings to fill the review.
 
-Keep the final review reply to one or two sentences without repeating inline findings. If none qualify, say that no blocking correctness, security, or scope issues were found. Mention limitations only when they materially affect that conclusion.
+If there are no findings, set `finish.reply` to exactly: "No blocking correctness, security, or scope issues found."
+
+If there are findings, keep `finish.reply` to one short sentence directing the author to the inline comments. Do not repeat the findings there.
+
+Do not include a review-process summary, lists of inspected files, descriptions of the changes, or explanations of why code looks correct. Only add a second short sentence when a specific limitation prevented you from assessing a material risk. Not running tests is not, by itself, such a limitation.
