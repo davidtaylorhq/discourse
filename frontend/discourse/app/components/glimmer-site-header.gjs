@@ -388,7 +388,44 @@ export default class GlimmerSiteHeader extends Component {
       fill: "forwards",
       easing: "ease-out",
     };
-    panel.animate([{ transform: `translate3d(0, 0, 0)` }], timing);
+    if (
+      !event &&
+      durationMs > 0 &&
+      panel.parentElement.classList.contains("hamburger-panel")
+    ) {
+      const direction = this._swipeMenuOrigin === "left" ? 1 : -1;
+      // Quadratic flight curves keep acceleration consistent between impacts.
+      const accelerate = "cubic-bezier(0.333333, 0, 0.666667, 0.333333)";
+      const decelerate = "cubic-bezier(0.333333, 0.666667, 0.666667, 1)";
+      const bounces = [
+        { offset: 0, distance: -PANEL_WIDTH, easing: decelerate },
+        { offset: 0.29, distance: 60, easing: accelerate },
+        { offset: 0.484, distance: 0 },
+        { offset: 0.516, distance: 0, squash: 0.9, easing: "ease-in" },
+        { offset: 0.548, distance: 0, easing: decelerate },
+        { offset: 0.665, distance: 22, easing: accelerate },
+        { offset: 0.781, distance: 0 },
+        { offset: 0.806, distance: 0, squash: 0.95, easing: "ease-in" },
+        { offset: 0.832, distance: 0, easing: decelerate },
+        { offset: 0.903, distance: 8, easing: accelerate },
+        { offset: 0.974, distance: 0 },
+        { offset: 0.987, distance: 0, squash: 0.98, easing: "ease-in" },
+        { offset: 1, distance: 0 },
+      ];
+      panel.animate(
+        bounces.map(
+          ({ offset, distance, squash = 1, easing = "ease-out" }) => ({
+            offset,
+            transform: `translate3d(${distance * direction}px, 0, 0) scaleX(${squash})`,
+            transformOrigin: direction === 1 ? "left center" : "right center",
+            easing,
+          })
+        ),
+        { ...timing, duration: durationMs * 8.5, easing: "linear" }
+      );
+    } else {
+      panel.animate([{ transform: `translate3d(0, 0, 0)` }], timing);
+    }
     cloakElement?.animate?.([{ opacity: 1 }], timing);
     this.pxClosed = null;
   }
