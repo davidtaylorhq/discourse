@@ -4,7 +4,7 @@ For completed changes, reply in one or two short sentences: state the outcome an
 
 For example: "Fixed and pushed the formatting correction. Prettier now passes."
 
-For screenshots, read `.skills/discourse-response-screenshots/SKILL.md`: capture with a temporary system spec, upload with `upload_image`, and embed the URL in your response.
+For screenshots and videos, read `.skills/discourse-response-screenshots/SKILL.md`: capture with a temporary system spec, upload with `upload_image`, and include the URL in your response.
 
 # Code reviews
 
