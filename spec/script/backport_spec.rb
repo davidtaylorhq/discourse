@@ -5,7 +5,7 @@ require "json"
 require "open3"
 require "tmpdir"
 
-RSpec.describe "script/backport.rb" do
+RSpec.describe "script/backport.rb" do # rubocop:disable RSpec/DescribeClass
   let(:directory) { Dir.mktmpdir("backport") }
   let(:source) { File.join(directory, "source") }
   let(:remote) { File.join(directory, "remote.git") }
