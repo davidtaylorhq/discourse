@@ -89,7 +89,9 @@ jobs:
         from this backport request. Read the full results at ${{ needs.backport.outputs.result_url }}
         for the target branches and commits. Leave successful backports alone.
         Reproduce each failed cherry-pick on its release branch, resolve the conflicts,
-        run relevant checks, and push the backport branch. Use open_pull_request to
+        and push the backport branch. Run targeted checks only when the resolution
+        is likely to introduce a problem; skip routine tests and lint for straightforward
+        backports that preserve the original behavior. Use open_pull_request to
         open its PR against the release branch. Summarize the results on the original PR.
     secrets:
       app-id: ${{ secrets.DISCOURSEBOT_APP_ID }}
