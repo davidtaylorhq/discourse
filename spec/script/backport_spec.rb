@@ -114,9 +114,9 @@ RSpec.describe "script/backport.rb" do # rubocop:disable RSpec/DescribeClass
       "result_url" => "https://github.com/test/repo/pull/123#issuecomment-789",
     )
     expect(File.read(summary)).to include(
-      "Successful backports",
-      "Starting agent-based backport now for **2026.5**",
-      "<details>\n<summary>2026.5: error details and manual instructions</summary>",
+      "- **2026.5:** Cherry-pick failed. Dispatching agent to resolve.\n- **2026.4:** https://github.com/test/repo/pull/456",
+      "<details>\n<summary>Error details and manual instructions</summary>",
+      "### 2026.5",
       "To resolve manually:",
       "</details>",
     )
@@ -134,9 +134,9 @@ RSpec.describe "script/backport.rb" do # rubocop:disable RSpec/DescribeClass
       "conflict_versions" => "",
     )
     expect(File.read(summary)).to include(
-      "Backports needing attention",
+      "- **2026.5:** Push failed.\n- **2026.4:** Push failed.",
       "pre-receive hook declined",
     )
-    expect(File.read(summary)).not_to include("Starting agent-based backport")
+    expect(File.read(summary).scan("<details>").size).to eq(1)
   end
 end

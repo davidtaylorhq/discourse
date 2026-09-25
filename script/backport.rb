@@ -151,6 +151,7 @@ backport_versions.each do |version|
       version: version,
       success: false,
       error: result.stderr,
+      summary: "Cherry-pick failed.",
       release_branch: release_branch,
       backport_branch: backport_branch,
       cherry_pick_range: cherry_pick_range,
@@ -170,6 +171,7 @@ backport_versions.each do |version|
       version: version,
       success: false,
       error: push.stderr,
+      summary: "Push failed.",
       release_branch: release_branch,
       backport_branch: backport_branch,
       cherry_pick_range: cherry_pick_range,
@@ -216,57 +218,51 @@ backport_versions.each do |version|
 end
 
 # Post summary comment
-successful = results.select { |r| r[:success] }
-failed = results.reject { |r| r[:success] }
-
 comment_lines = ["## Backport results\n"]
 
-if conflicts.any?
-  comment_lines << "Starting agent-based backport now for **#{conflicts.join(", ")}** to resolve cherry-pick conflicts.\n"
-end
-
-if successful.any?
-  comment_lines << "### Successful backports"
-  successful.each { |r| comment_lines << "- #{r[:version]}: #{r[:pr_url]}" }
-  comment_lines << ""
-end
-
-if failed.any?
-  comment_lines << "### Backports needing attention"
-  failed.each do |r|
-    if r[:cherry_pick_range]
-      gh_create =
-        "gh pr create --repo #{repo} --base #{r[:release_branch]} --head #{r[:backport_branch]} " \
-          "--title #{bash_quote(r[:backport_title])} --body #{bash_quote(r[:backport_body])}"
-
-      comment_lines << <<~MSG
-        <details>
-        <summary>#{r[:version]}: error details and manual instructions</summary>
-
-        ```
-        #{r[:error]}
-        ```
-
-        To resolve manually:
-        ```bash
-        git fetch #{repo_url} #{r[:release_branch]}
-        git checkout -B #{r[:backport_branch]} FETCH_HEAD
-        git cherry-pick #{r[:cherry_pick_range]}
-
-        # Resolve any conflicts, then push the branch and open the PR:
-        git push -f #{repo_url} #{r[:backport_branch]}:#{r[:backport_branch]}
-        #{gh_create}
-        ```
-
-        </details>
-      MSG
+results.each do |result|
+  status =
+    if result[:success]
+      result[:pr_url]
+    elsif conflicts.include?(result[:version])
+      "Cherry-pick failed. Dispatching agent to resolve."
     else
-      comment_lines << "- **#{r[:version]}**: #{r[:error]}"
+      result[:summary] || result[:error]
     end
-  end
+  comment_lines << "- **#{result[:version]}:** #{status}"
 end
 
-comment_lines << "No backports were attempted." if successful.empty? && failed.empty?
+manual_results = results.select { |result| result[:cherry_pick_range] }
+if manual_results.any?
+  comment_lines << "\n<details>\n<summary>Error details and manual instructions</summary>\n"
+  manual_results.each do |result|
+    gh_create =
+      "gh pr create --repo #{repo} --base #{result[:release_branch]} --head #{result[:backport_branch]} " \
+        "--title #{bash_quote(result[:backport_title])} --body #{bash_quote(result[:backport_body])}"
+
+    comment_lines << <<~MSG
+      ### #{result[:version]}
+
+      ```
+      #{result[:error]}
+      ```
+
+      To resolve manually:
+      ```bash
+      git fetch #{repo_url} #{result[:release_branch]}
+      git checkout -B #{result[:backport_branch]} FETCH_HEAD
+      git cherry-pick #{result[:cherry_pick_range]}
+
+      # Resolve any conflicts, then push the branch and open the PR:
+      git push -f #{repo_url} #{result[:backport_branch]}:#{result[:backport_branch]}
+      #{gh_create}
+      ```
+    MSG
+  end
+  comment_lines << "</details>"
+end
+
+comment_lines << "No backports were attempted." if results.empty?
 
 result_url =
   gh(
