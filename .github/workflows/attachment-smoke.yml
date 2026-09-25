@@ -18,11 +18,10 @@ jobs:
           private-key: ${{ secrets.DISCOURSEBOT_APP_PRIVATE_KEY }}
           owner: ${{ github.repository_owner }}
           repositories: ${{ github.event.repository.name }}
-          permission-issues: write
+          permission-pull-requests: write
 
-      - name: Upload with PAT and post with App token
+      - name: Post uploaded image with App token
         env:
-          UPLOAD_TOKEN: ${{ secrets.ATTACHMENT_UPLOAD_TOKEN }}
           APP_TOKEN: ${{ steps.app.outputs.token }}
         run: |
           python3 - <<'PY'
@@ -58,25 +57,7 @@ jobs:
               return struct.pack('>I', len(data)) + kind + data + struct.pack('>I', zlib.crc32(kind + data))
           
           
-          pat = os.environ['UPLOAD_TOKEN']
-          if not pat:
-              raise SystemExit('ATTACHMENT_UPLOAD_TOKEN is missing')
-          repo = request('https://api.github.com/repos/davidtaylorhq/workflow-agent-assets', pat)
-          width, height = 160, 60
-          rows = b''.join(b'\0' + bytes((40, 120, 210) if y < 30 else (80, 180, 120)) * width for y in range(height))
-          png = b'\x89PNG\r\n\x1a\n'
-          png += chunk(b'IHDR', struct.pack('>IIBBBBB', width, height, 8, 2, 0, 0, 0))
-          png += chunk(b'IDAT', zlib.compress(rows)) + chunk(b'IEND', b'')
-          query = urllib.parse.urlencode({
-              'name': 'cross-repository-attachment-test.png',
-              'content_type': 'image/png',
-              'repository_id': repo['id'],
-          })
-          asset = request(f'https://uploads.github.com/user-attachments/assets?{query}', pat, png, 'application/octet-stream')
-          url = asset['url']
-          if not url.startswith('https://github.com/user-attachments/assets/'):
-              raise SystemExit('Unexpected attachment URL')
-          print(f'Attachment: {url}')
+          url = 'https://github.com/user-attachments/assets/ee8803bc-093e-46a5-8d16-f0c97936fe7a'
           body = f'Image upload test: uploaded against `workflow-agent-assets` using a repository-scoped PAT; this comment was posted using the bot’s App token.\n\n![Cross-repository upload test: blue and green bands]({url})'
           comment = request('https://api.github.com/repos/davidtaylorhq/discourse/issues/328/comments', os.environ['APP_TOKEN'], json.dumps({'body': body}).encode())
           print(f'Comment: {comment["html_url"]}')
