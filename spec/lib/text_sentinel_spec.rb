@@ -30,15 +30,15 @@ RSpec.describe TextSentinel do
     end
 
     it "Works on foreign characters" do
-      expect(TextSentinel.new("去年十社會警告").entropy).to eq(18)
+      expect(TextSentinel.new("去年十社會警告").entropy).to eq(7)
     end
 
     it "generates enough entropy for short foreign strings" do
-      expect(TextSentinel.new("又一个测").entropy).to eq(10)
+      expect(TextSentinel.new("又一个测").entropy).to eq(4)
     end
 
     it "handles repeated foreign characters" do
-      expect(TextSentinel.new("又一个测试话题" * 3).entropy).to eq(17)
+      expect(TextSentinel.new("又一个测试话题" * 3).entropy).to eq(7)
     end
   end
 

@@ -36,9 +36,9 @@ class TextSentinel
     TextSentinel.new(text, min_entropy: entropy, max_word_length: SiteSetting.title_max_word_length)
   end
 
-  # Number of unique bytes
+  # Number of unique characters
   def entropy
-    @entropy ||= @text.strip.bytes.uniq.size
+    @entropy ||= @text.strip.chars.uniq.size
   end
 
   def valid?
