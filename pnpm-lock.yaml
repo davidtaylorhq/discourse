@@ -254,8 +254,8 @@ importers:
         specifier: ^4.0.0
         version: 4.0.0(eslint@10.6.0(jiti@2.7.0)(supports-color@10.2.2))
       postcss-selector-parser:
-        specifier: ^7.1.6
-        version: 7.1.6
+        specifier: ^7.1.8
+        version: 7.1.8
       postcss-value-parser:
         specifier: ^4.2.0
         version: 4.2.0
@@ -4290,11 +4290,6 @@ packages:
     resolution: {integrity: sha512-X7sjQzceUhu1u7Y/ylrRZFU2FS6LRiFVp6rKLPg23y3x3c3DOKAwuXGDp+PAGjh6CSnCjYeAul8pcT8bAl+lSA==}
     engines: {node: ^10 || ^12.20.0 || ^14.13.0 || >=15.0.0}
 
-  cssesc@3.0.0:
-    resolution: {integrity: sha512-/Tb/JcjK111nNScGob5MNtsntNM1aCNUDipB/TkwZFhyDrrE47SOx/18wF2bbjgc3ZzCSKW1T5nt5EbFoAz/Vg==}
-    engines: {node: '>=4'}
-    hasBin: true
-
   cssfilter@0.0.10:
     resolution: {integrity: sha512-FAaLDaplstoRsDR8XGYH51znUN0UY7nMc6Z9/fvE8EXGwvJE9hu7W2vHwx1+bd6gCYnln9nLbzxFTrcO9YQDZw==}
 
@@ -6809,8 +6804,8 @@ packages:
     peerDependencies:
       postcss: ^8.4.29
 
-  postcss-selector-parser@7.1.6:
-    resolution: {integrity: sha512-7qASPzhKF2l2KLboRZux8CCTRMdGiV08vWmyKzPz22qZ7ZjQBOeY7rNzNoCLSUiftJ7HUq0GERHmxw/t0dCdMw==}
+  postcss-selector-parser@7.1.8:
+    resolution: {integrity: sha512-4CrD1SdKVx3bWOXG6Mh5YI9s/NTEgMq4T+O0T4wj2JqGhxbi8BAPc8BJYDVrVOqXBbWGX7YMO3f3ldOSscdCew==}
     engines: {node: '>=4'}
 
   postcss-value-parser@4.2.0:
@@ -9464,13 +9459,13 @@ snapshots:
       postcss: 8.5.29
       postcss-value-parser: 4.2.0
 
-  '@csstools/selector-resolve-nested@4.0.2(postcss-selector-parser@7.1.6)':
+  '@csstools/selector-resolve-nested@4.0.2(postcss-selector-parser@7.1.8)':
     dependencies:
-      postcss-selector-parser: 7.1.6
+      postcss-selector-parser: 7.1.8
 
-  '@csstools/selector-specificity@6.0.1(postcss-selector-parser@7.1.6)':
+  '@csstools/selector-specificity@6.0.1(postcss-selector-parser@7.1.8)':
     dependencies:
-      postcss-selector-parser: 7.1.6
+      postcss-selector-parser: 7.1.8
 
   '@csstools/utilities@3.0.0(postcss@8.5.29)':
     dependencies:
@@ -10424,7 +10419,7 @@ snapshots:
 
   '@npmcli/query@5.0.0':
     dependencies:
-      postcss-selector-parser: 7.1.6
+      postcss-selector-parser: 7.1.8
 
   '@npmcli/redact@4.0.0': {}
 
@@ -12145,8 +12140,6 @@ snapshots:
     dependencies:
       mdn-data: 2.27.1
       source-map-js: 1.2.2
-
-  cssesc@3.0.0: {}
 
   cssfilter@0.0.10: {}
 
@@ -15175,13 +15168,13 @@ snapshots:
     dependencies:
       icss-utils: 5.1.0(postcss@8.5.29)
       postcss: 8.5.29
-      postcss-selector-parser: 7.1.6
+      postcss-selector-parser: 7.1.8
       postcss-value-parser: 4.2.0
 
   postcss-modules-scope@3.2.1(postcss@8.5.29):
     dependencies:
       postcss: 8.5.29
-      postcss-selector-parser: 7.1.6
+      postcss-selector-parser: 7.1.8
 
   postcss-modules-values@4.0.0(postcss@8.5.29):
     dependencies:
@@ -15190,10 +15183,10 @@ snapshots:
 
   postcss-nesting@14.0.3(postcss@8.5.29):
     dependencies:
-      '@csstools/selector-resolve-nested': 4.0.2(postcss-selector-parser@7.1.6)
-      '@csstools/selector-specificity': 6.0.1(postcss-selector-parser@7.1.6)
+      '@csstools/selector-resolve-nested': 4.0.2(postcss-selector-parser@7.1.8)
+      '@csstools/selector-specificity': 6.0.1(postcss-selector-parser@7.1.8)
       postcss: 8.5.29
-      postcss-selector-parser: 7.1.6
+      postcss-selector-parser: 7.1.8
 
   postcss-resolve-nested-selector@0.1.6: {}
 
@@ -15205,9 +15198,8 @@ snapshots:
     dependencies:
       postcss: 8.5.29
 
-  postcss-selector-parser@7.1.6:
+  postcss-selector-parser@7.1.8:
     dependencies:
-      cssesc: 3.0.0
       util-deprecate: 1.0.2
 
   postcss-value-parser@4.2.0: {}
@@ -16203,7 +16195,7 @@ snapshots:
       known-css-properties: 0.37.0
       postcss-media-query-parser: 0.2.3
       postcss-resolve-nested-selector: 0.1.6
-      postcss-selector-parser: 7.1.6
+      postcss-selector-parser: 7.1.8
       postcss-value-parser: 4.2.0
       stylelint: 17.5.0(supports-color@10.2.2)(typescript@7.1.0-dev.20260930.4)
 
@@ -16214,8 +16206,8 @@ snapshots:
       '@csstools/css-syntax-patches-for-csstree': 1.1.5(css-tree@3.2.1)
       '@csstools/css-tokenizer': 4.0.2
       '@csstools/media-query-list-parser': 5.0.0(@csstools/css-parser-algorithms@4.0.2(@csstools/css-tokenizer@4.0.2))(@csstools/css-tokenizer@4.0.2)
-      '@csstools/selector-resolve-nested': 4.0.2(postcss-selector-parser@7.1.6)
-      '@csstools/selector-specificity': 6.0.1(postcss-selector-parser@7.1.6)
+      '@csstools/selector-resolve-nested': 4.0.2(postcss-selector-parser@7.1.8)
+      '@csstools/selector-specificity': 6.0.1(postcss-selector-parser@7.1.8)
       colord: 2.10.0
       cosmiconfig: 9.0.2(typescript@7.1.0-dev.20260930.4)
       css-functions-list: 3.3.3
@@ -16239,7 +16231,7 @@ snapshots:
       picocolors: 1.1.1
       postcss: 8.5.29
       postcss-safe-parser: 7.0.1(postcss@8.5.29)
-      postcss-selector-parser: 7.1.6
+      postcss-selector-parser: 7.1.8
       postcss-value-parser: 4.2.0
       string-width: 8.2.1
       supports-hyperlinks: 4.4.0
