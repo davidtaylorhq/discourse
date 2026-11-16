@@ -293,8 +293,8 @@ importers:
         specifier: ^7.29.2
         version: 7.29.7(@babel/core@7.29.7(supports-color@10.2.2))(supports-color@10.2.2)
       '@csstools/postcss-light-dark-function':
-        specifier: ^3.0.7
-        version: 3.0.7(postcss@8.5.29)
+        specifier: ^3.0.8
+        version: 3.0.8(postcss@8.5.29)
       '@glimmer/syntax':
         specifier: ^0.95.0
         version: 0.95.0
@@ -1992,14 +1992,14 @@ packages:
       '@csstools/css-parser-algorithms': ^4.0.0
       '@csstools/css-tokenizer': ^4.0.0
 
-  '@csstools/postcss-light-dark-function@3.0.7':
-    resolution: {integrity: sha512-1KU+2530YHgfBJ1Q2RjH2UsNA1G+MH32L+D/NPWT2UhqfyOkhWD6ogUdzLZY+TnxeYZvYUZe0VZ7ZNY1d0dQ+w==}
+  '@csstools/postcss-light-dark-function@3.0.8':
+    resolution: {integrity: sha512-dhtKNI0tDIVnx0qJ7lPIS2Nm1sPmPoQjM2jQvvYRUROKRvresRVzimA8st7JwK8vCFO+c9BvvXB+jUV+kv03fA==}
     engines: {node: '>=20.19.0'}
     peerDependencies:
       postcss: ^8.4
 
-  '@csstools/postcss-progressive-custom-properties@5.1.4':
-    resolution: {integrity: sha512-cx8ofEWUB1dj2Y2qiignCOJFyTcUdZCGSD+8N2qXxFDD3UEkknwnjIcU9deqyuDzj2aW+qjo/5h4uW0ePPSOrQ==}
+  '@csstools/postcss-progressive-custom-properties@5.1.5':
+    resolution: {integrity: sha512-/H7shtJWwo2afnoH3IEYDD0rqxFV5T9WaUQf8PWkoHAlKrJWGR+nNQXf7EuERavt6l91eoJQAzJButsHXXwb6Q==}
     engines: {node: '>=20.19.0'}
     peerDependencies:
       postcss: ^8.4
@@ -9451,15 +9451,15 @@ snapshots:
       '@csstools/css-parser-algorithms': 4.0.2(@csstools/css-tokenizer@4.0.2)
       '@csstools/css-tokenizer': 4.0.2
 
-  '@csstools/postcss-light-dark-function@3.0.7(postcss@8.5.29)':
+  '@csstools/postcss-light-dark-function@3.0.8(postcss@8.5.29)':
     dependencies:
       '@csstools/css-parser-algorithms': 4.0.2(@csstools/css-tokenizer@4.0.2)
       '@csstools/css-tokenizer': 4.0.2
-      '@csstools/postcss-progressive-custom-properties': 5.1.4(postcss@8.5.29)
+      '@csstools/postcss-progressive-custom-properties': 5.1.5(postcss@8.5.29)
       '@csstools/utilities': 3.0.0(postcss@8.5.29)
       postcss: 8.5.29
 
-  '@csstools/postcss-progressive-custom-properties@5.1.4(postcss@8.5.29)':
+  '@csstools/postcss-progressive-custom-properties@5.1.5(postcss@8.5.29)':
     dependencies:
       postcss: 8.5.29
       postcss-value-parser: 4.2.0
