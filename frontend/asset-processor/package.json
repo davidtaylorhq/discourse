@@ -18,7 +18,7 @@
     "@glimmer/syntax": "^0.95.0",
     "@rollup/browser": "^4.64.5",
     "@rollup/plugin-babel": "^7.0.0",
-    "autoprefixer": "^10.6.1",
+    "autoprefixer": "^10.6.2",
     "babel-plugin-ember-template-compilation": "^4.0.1",
     "content-tag": "^4.2.1",
     "core-js": "^3.50.0",
