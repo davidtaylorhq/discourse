@@ -66,7 +66,7 @@
     "@lezer/common": "^1.5.3",
     "@lezer/highlight": "^1.2.5",
     "@lezer/javascript": "^1.5.6",
-    "@lezer/lr": "^1.4.11",
+    "@lezer/lr": "^1.4.12",
     "@warp-drive/core": "5.9.0-alpha.15",
     "@warp-drive/ember": "5.9.0-alpha.15",
     "@warp-drive/json-api": "5.9.0-alpha.15",
